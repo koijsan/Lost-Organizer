@@ -48,7 +48,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
         // --- ÍCONES INLINE ---
         const Icon = ({ path, size = 16, className = "", title = "", fill = "none", strokeWidth = "2" }) => (
@@ -103,6 +103,51 @@
                 try { JSON.parse(localStorage.getItem(k)); } catch { localStorage.removeItem(k); }
             });
         } catch (e) { /* localStorage indisponível */ }
+
+        // --- RESET SEMANAL: toda quarta às 04:00 (Brasília, UTC-3) = quarta 07:00 UTC ---
+        const WEEK_MS = 7 * 24 * 3600 * 1000;
+        const lastResetTime = (now = Date.now()) => {
+            const d = new Date(now);
+            const daysSince = (d.getUTCDay() - 3 + 7) % 7;
+            let t = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - daysSince, 7, 0, 0);
+            if (t > now) t -= WEEK_MS;
+            return t;
+        };
+        const formatCountdown = (ms) => {
+            const m = Math.max(0, Math.floor(ms / 60000));
+            const d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mi = m % 60;
+            return d > 0 ? `${d}d ${h}h` : (h > 0 ? `${h}h ${mi}min` : `${mi}min`);
+        };
+
+        // --- COMPARTILHAR POR LINK (JSON comprimido em base64url dentro do #hash) ---
+        const toB64Url = (bytes) => {
+            let bin = '';
+            for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+            return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        };
+        const fromB64Url = (str) => {
+            const bin = atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+            const out = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+            return out;
+        };
+        const encodeShare = async (obj) => {
+            const raw = new TextEncoder().encode(JSON.stringify(obj));
+            if (typeof CompressionStream !== 'undefined') {
+                const stream = new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'));
+                return 'g' + toB64Url(new Uint8Array(await new Response(stream).arrayBuffer()));
+            }
+            return 'r' + toB64Url(raw);
+        };
+        const decodeShare = async (str) => {
+            let bytes = fromB64Url(str.slice(1));
+            if (str[0] === 'g') {
+                const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+                bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+            }
+            return JSON.parse(new TextDecoder().decode(bytes));
+        };
+        const normText = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
         // --- COMPONENTE PRINCIPAL ---
         function App() {
@@ -189,6 +234,163 @@
 
             const getCharLocation = (charId) => activeRaid.assignments[charId] || 'garage';
 
+            // --- DESFAZER (histórico de alterações; atalho Ctrl+Z) ---
+            const historyRef = useRef([]);
+            const prevStateRef = useRef({ raids, characters });
+            const lastChangeRef = useRef(0);
+            const skipHistoryRef = useRef(false);
+            const [historyCount, setHistoryCount] = useState(0);
+
+            useEffect(() => {
+                if (skipHistoryRef.current) {
+                    skipHistoryRef.current = false;
+                    prevStateRef.current = { raids, characters };
+                    return;
+                }
+                const prev = prevStateRef.current;
+                if (prev.raids === raids && prev.characters === characters) return;
+                const now = Date.now();
+                // Alterações em rajada (ex.: digitando um nome) viram um único passo do histórico
+                if (now - lastChangeRef.current > 800) {
+                    historyRef.current.push(prev);
+                    if (historyRef.current.length > 50) historyRef.current.shift();
+                    setHistoryCount(historyRef.current.length);
+                }
+                lastChangeRef.current = now;
+                prevStateRef.current = { raids, characters };
+            }, [raids, characters]);
+
+            const undo = () => {
+                const snap = historyRef.current.pop();
+                setHistoryCount(historyRef.current.length);
+                if (!snap) return;
+                const cur = prevStateRef.current;
+                if (snap.raids === cur.raids && snap.characters === cur.characters) return;
+                skipHistoryRef.current = true;
+                setRaids(snap.raids);
+                setCharacters(snap.characters);
+            };
+
+            useEffect(() => {
+                const onKey = (e) => {
+                    const tag = ((e.target && e.target.tagName) || '').toLowerCase();
+                    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !['input', 'textarea', 'select'].includes(tag)) {
+                        e.preventDefault();
+                        undo();
+                    }
+                };
+                window.addEventListener('keydown', onKey);
+                return () => window.removeEventListener('keydown', onKey);
+            }, []);
+
+            // --- BUSCA / FILTROS DA GARAGEM ---
+            const [search, setSearch] = useState('');
+            const [roleFilter, setRoleFilter] = useState('Todos');
+            const [classFilter, setClassFilter] = useState('Todas');
+            const hasGarageFilter = !!search.trim() || roleFilter !== 'Todos' || classFilter !== 'Todas';
+
+            // --- RESET SEMANAL (quarta 04:00 Brasília): contagem regressiva + aviso ---
+            const [nowTick, setNowTick] = useState(Date.now());
+            useEffect(() => {
+                const id = setInterval(() => setNowTick(Date.now()), 30000);
+                return () => clearInterval(id);
+            }, []);
+            const [resetAck, setResetAck] = useState(() => {
+                try { return Number(localStorage.getItem('la_reset_ack')) || lastResetTime(); } catch { return lastResetTime(); }
+            });
+            useEffect(() => { try { localStorage.setItem('la_reset_ack', String(resetAck)); } catch (e) { /* ignore */ } }, [resetAck]);
+            const currentReset = lastResetTime(nowTick);
+            const nextResetIn = currentReset + WEEK_MS - nowTick;
+            const hasCompleted = raids.some(r => r.groups.some(g => g.completed));
+            const resetPending = currentReset > resetAck && hasCompleted;
+            useEffect(() => {
+                // Passou um reset e não há nada concluído: só atualiza o marcador, sem incomodar
+                if (currentReset > resetAck && !hasCompleted) setResetAck(currentReset);
+            }, [currentReset, hasCompleted, resetAck]);
+
+            const applyWeeklyReset = () => {
+                setRaids(prev => prev.map(r => ({
+                    ...r,
+                    groups: r.groups.map(g => ({ ...g, completed: false }))
+                })));
+                setResetAck(lastResetTime());
+            };
+
+            // --- COMPARTILHAR POR LINK ---
+            const shareLink = async () => {
+                const assigned = new Set(Object.keys(activeRaid.assignments));
+                const chars = characters.filter(c => assigned.has(c.id));
+                if (chars.length === 0) return showAlert('Coloque ao menos um personagem em uma PT antes de compartilhar.');
+                const colors = {};
+                chars.forEach(c => { if (rosterColors[c.roster]) colors[c.roster] = rosterColors[c.roster]; });
+                try {
+                    const code = await encodeShare({ app: 'lostark-raid-organizer', v: 1, raid: activeRaid, characters: chars, colors });
+                    const url = `${location.href.split('#')[0]}#s=${code}`;
+                    const longWarn = url.length > 1900 ? '\n\nAtenção: o link é longo e pode ser cortado em alguns apps (ex.: Discord sem Nitro tem limite de 2000 caracteres).' : '';
+                    try {
+                        await navigator.clipboard.writeText(url);
+                        showAlert(`Link copiado! Quem abrir poderá adicionar a raid "${activeRaid.title}" (${chars.length} personagens) como uma nova aba.${longWarn}`);
+                    } catch {
+                        window.prompt('Copie o link abaixo:', url);
+                    }
+                } catch {
+                    showAlert('Não foi possível gerar o link neste navegador.');
+                }
+            };
+
+            const importShared = (d) => {
+                const stamp = Date.now();
+                const idMap = {};
+                const newChars = d.characters.slice(0, 200).map((c, i) => {
+                    const id = `sh${stamp}_${i}`;
+                    idMap[c.id] = id;
+                    return {
+                        id,
+                        roster: String(c.roster || '').slice(0, 40),
+                        charClass: LA_CLASSES.includes(c.charClass) ? c.charClass : LA_CLASSES[0],
+                        ilvl: String(Number(c.ilvl) || ''),
+                        primaryRole: c.primaryRole === 'Suporte' ? 'Suporte' : 'DPS',
+                        secondaryRole: String(c.secondaryRole || 'Nenhuma').slice(0, 40)
+                    };
+                });
+                const r = d.raid;
+                const groups = r.groups.slice(0, 30).map(g => ({ id: String(g.id), title: String(g.title || 'Grupo').slice(0, 28), completed: false }));
+                const groupIds = new Set(groups.map(g => g.id));
+                const assignments = {};
+                Object.entries(r.assignments || {}).forEach(([cid, loc]) => {
+                    if (idMap[cid] && groupIds.has(loc)) assignments[idMap[cid]] = loc;
+                });
+                const colors = {};
+                Object.entries(d.colors || {}).forEach(([k, v]) => { if (/^#[0-9a-f]{3,8}$/i.test(String(v))) colors[String(k).slice(0, 40)] = v; });
+                const newRaid = {
+                    id: `sh${stamp}`,
+                    title: `${String(r.title || 'Raid').slice(0, 40)} (compartilhada)`,
+                    emoji: String(r.emoji || '⚔️').slice(0, 8),
+                    minIlevel: '', maxIlevel: '',
+                    mode: r.mode === 4 ? 4 : 8,
+                    groups, assignments
+                };
+                setCharacters(prev => [...prev, ...newChars]);
+                setRosterColors(prev => ({ ...colors, ...prev }));
+                setRaids(prev => [...prev, newRaid]);
+                setActiveRaidId(newRaid.id);
+            };
+
+            useEffect(() => {
+                const m = location.hash.match(/^#s=(.+)$/);
+                if (!m) return;
+                (async () => {
+                    try {
+                        const d = await decodeShare(m[1]);
+                        if (!d || d.app !== 'lostark-raid-organizer' || !d.raid || !Array.isArray(d.raid.groups) || !Array.isArray(d.characters)) throw new Error('invalid');
+                        history.replaceState(null, '', location.href.split('#')[0]);
+                        showConfirm(`Adicionar a raid compartilhada "${String(d.raid.title || 'Raid').slice(0, 40)}" (${d.characters.length} personagens) como nova aba? Seus dados atuais não serão apagados.`, () => importShared(d));
+                    } catch {
+                        showAlert('Link de compartilhamento inválido ou corrompido.');
+                    }
+                })();
+            }, []);
+
             // --- LÓGICA DE ABAS (TABS) ---
             const createNewRaid = () => {
                 const newRaid = {
@@ -215,12 +417,7 @@
 
             // --- RESET SEMANAL ---
             const resetAllWeekly = () => {
-                showConfirm("Deseja desmarcar TODAS as PTs concluídas em TODAS as Raides? Isso irá resetar a semana.", () => {
-                    setRaids(prev => prev.map(r => ({
-                        ...r,
-                        groups: r.groups.map(g => ({ ...g, completed: false }))
-                    })));
-                });
+                showConfirm("Deseja desmarcar TODAS as PTs concluídas em TODAS as Raides? Isso irá resetar a semana.", applyWeeklyReset);
             };
 
             // --- BACKUP: EXPORTAR / IMPORTAR ---
@@ -329,6 +526,18 @@
                 updateActiveRaid(raid => ({
                     ...raid,
                     groups: [...raid.groups, { id: `party${Date.now()}`, title: `Grupo ${raid.groups.length + 1}`, completed: false }]
+                }));
+            };
+
+            const renameGroup = (groupId, newTitle) => {
+                const clean = (newTitle || '').trim().slice(0, 28);
+                updateActiveRaid(raid => ({
+                    ...raid,
+                    groups: raid.groups.map(g => {
+                        if (g.id !== groupId) return g;
+                        const fallback = `Grupo ${raid.groups.findIndex(x => x.id === groupId) + 1}`;
+                        return { ...g, title: clean || fallback };
+                    })
                 }));
             };
 
@@ -521,6 +730,10 @@
                     if (activeRaid.maxIlevel) {
                         charsInZone = charsInZone.filter(c => Number(c.ilvl || 0) <= Number(activeRaid.maxIlevel));
                     }
+                    const q = normText(search.trim());
+                    if (q) charsInZone = charsInZone.filter(c => normText(`${c.roster} ${c.charClass}`).includes(q));
+                    if (roleFilter !== 'Todos') charsInZone = charsInZone.filter(c => c.primaryRole === roleFilter);
+                    if (classFilter !== 'Todas') charsInZone = charsInZone.filter(c => c.charClass === classFilter);
                 }
 
                 const supports = charsInZone.filter(c => c.primaryRole === 'Suporte').length;
@@ -549,7 +762,18 @@
                                     ) : (
                                         <Icons.Users size={16} className="text-amber-400"/>
                                     )} 
-                                    {title}
+                                    {isParty ? (
+                                        <input
+                                            key={title}
+                                            type="text"
+                                            defaultValue={title}
+                                            maxLength={28}
+                                            title="Toque para renomear a PT"
+                                            onBlur={(e) => { if (e.target.value !== title) renameGroup(locationId, e.target.value); }}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
+                                            className={`bg-transparent min-w-0 w-36 font-extrabold text-sm border-b border-dashed border-slate-600/60 hover:border-slate-400 focus:border-indigo-400 focus:outline-none transition-colors ${isCompleted ? 'line-through' : ''}`}
+                                        />
+                                    ) : title}
                                     {!isParty && (
                                         <span className="text-[11px] font-bold text-slate-400 bg-slate-900/65 px-2 py-0.5 rounded-full border border-slate-700/65 ml-2 shadow-inner">
                                             {charsInZone.length} Disponíveis
@@ -608,7 +832,7 @@
                         }>
                             {charsInZone.length === 0 ? (
                                 <div className={`flex items-center justify-center text-slate-500 border-2 border-dashed border-slate-700/60 rounded-lg p-6 text-center text-xs ${isParty ? 'flex-1 min-h-[120px]' : 'col-span-full py-12 bg-slate-900/10'}`}>
-                                    {(!isParty && (activeRaid.minIlevel || activeRaid.maxIlevel)) ? "Nenhum personagem correspondente aos filtros" : "Sem personagens na garagem. Clique em 'Criar Personagem' para adicionar."}
+                                    {(!isParty && (activeRaid.minIlevel || activeRaid.maxIlevel || hasGarageFilter)) ? "Nenhum personagem correspondente aos filtros" : "Sem personagens na garagem. Clique em 'Criar Personagem' para adicionar."}
                                 </div>
                             ) : charsInZone.map(char => <CharacterCard key={char.id} char={char} isDisabled={isCompleted} compact={compact} />)}
                         </div>
@@ -741,14 +965,33 @@
                     } else {
                         // Grupo Isolado (PT Solta de 4 Players)
                         const g1 = pair.g1;
+                        const ptChars = characters.filter(c => getCharLocation(c.id) === g1.id);
+                        const ptSynergies = Array.from(new Set(ptChars.map(c => c.secondaryRole).filter(sr => sr && sr !== 'Nenhuma')));
+                        const ptAvg = ptChars.length > 0 ? (ptChars.reduce((sum, c) => sum + Number(c.ilvl || 0), 0) / ptChars.length).toFixed(1) : null;
                         return (
-                            <div key={`single-${g1.id}`} className="flex-shrink-0">
-                                <DropZone locationId={g1.id} title={g1.title} isParty={true} compact={false} />
+                            <div key={`single-${g1.id}`} className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 shadow-xl flex flex-col gap-3 w-full max-w-[380px] hover:border-indigo-500/35 transition-all duration-300">
+                                <div className="flex items-center justify-between border-b border-slate-700/70 pb-2">
+                                    <span className="text-[10px] font-black tracking-widest uppercase text-indigo-300">PT {index + 1} · 4 Players</span>
+                                    {ptAvg && <span className="bg-slate-900/60 text-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded border border-slate-700">iLvl Médio: {ptAvg}</span>}
+                                </div>
+                                <DropZone locationId={g1.id} title={g1.title} isParty={true} compact={true} />
+                                <div className="bg-slate-900/45 p-2.5 rounded-xl border border-slate-700/50 text-xs text-slate-400 flex flex-wrap gap-1.5 items-center">
+                                    <span className="font-extrabold text-indigo-400 uppercase tracking-wider text-[10px] mr-1">Sinergias</span>
+                                    {ptSynergies.map(syn => (
+                                        <span key={syn} className="bg-slate-850 text-indigo-200 px-2 py-1 rounded-lg border border-slate-700/50 flex items-center gap-1.5 font-semibold shadow-sm">
+                                            {renderRoleIcon(syn, syn)} {syn}
+                                        </span>
+                                    ))}
+                                    {ptSynergies.length === 0 && <span className="text-slate-500 italic">Nenhuma</span>}
+                                </div>
                             </div>
                         );
                     }
                 });
             };
+
+            const classOptions = [...new Set(characters.map(c => c.charClass))].sort();
+            const filterFieldCls = "bg-slate-800 text-slate-200 text-sm font-semibold px-3 py-2 rounded-lg border border-slate-700 hover:border-slate-500 focus:border-indigo-500 focus:outline-none transition-colors";
 
             return (
                 <div className="min-h-screen p-6">
@@ -758,6 +1001,18 @@
                             LOST ORGANIZER
                         </h1>
                     </header>
+
+                    {resetPending && (
+                        <div className="max-w-[1700px] mx-auto mb-4 px-4">
+                            <div className="bg-amber-900/30 border border-amber-700/50 text-amber-200 rounded-xl p-3 flex flex-wrap items-center gap-3 justify-between">
+                                <span className="font-bold text-sm">🔔 O reset semanal (quarta, 04:00 de Brasília) já aconteceu! Você ainda tem PTs marcadas como concluídas.</span>
+                                <div className="flex gap-2">
+                                    <button onClick={applyWeeklyReset} className="px-4 py-1.5 rounded-lg font-bold bg-green-700 hover:bg-green-600 text-white text-sm transition-all">Resetar agora</button>
+                                    <button onClick={() => setResetAck(currentReset)} className="px-4 py-1.5 rounded-lg font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm border border-slate-700 transition-all">Dispensar</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* TABS DE RAIDS & RESET SEMANAL */}
                     <div className="max-w-[1700px] mx-auto mb-0 flex gap-2 overflow-x-auto pt-2 px-4 scrollbar-thin items-end">
@@ -779,6 +1034,8 @@
                         
                         {/* Botão de Reset Semanal */}
                         <div className="ml-auto pb-1 flex gap-2 flex-shrink-0">
+                            <button onClick={undo} disabled={historyCount === 0} className="px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-800 disabled:hover:text-slate-300" title="Desfaz a última alteração (Ctrl+Z)">↩️ Desfazer</button>
+                            <button onClick={shareLink} className="px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all whitespace-nowrap" title="Copia um link com a raid atual e os personagens dela">🔗 Compartilhar</button>
                             <button onClick={exportData} className="px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all whitespace-nowrap" title="Baixa um arquivo de backup com seus personagens e raids">💾 Exportar</button>
                             <label className="px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all cursor-pointer whitespace-nowrap" title="Restaura um backup exportado anteriormente">
                                 📂 Importar
@@ -789,7 +1046,7 @@
                                 className="px-4 py-2 rounded-lg font-bold bg-green-900/30 text-green-400 hover:bg-green-900/60 hover:text-green-300 flex items-center gap-2 border border-green-800/40 transition-all shadow-lg"
                                 title="Desmarca as PTs concluídas de TODAS as raides salvas"
                             >
-                                <Icons.RefreshCw size={16} /> Reset Semanal
+                                <Icons.RefreshCw size={16} /> Reset Semanal <span className="text-[11px] font-semibold opacity-80 whitespace-nowrap">· em {formatCountdown(nextResetIn)}</span>
                             </button>
                         </div>
                     </div>
@@ -829,6 +1086,21 @@
                         
                         {/* Garagem de Personagens no TOPO da tela com largura total */}
                         <div className="w-full z-10">
+                            <div className="flex flex-wrap gap-2 items-center mb-3">
+                                <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Buscar por roster ou classe..." className={`${filterFieldCls} flex-1 min-w-[200px]`} />
+                                <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className={filterFieldCls} title="Filtrar por função">
+                                    <option value="Todos">Todas as funções</option>
+                                    <option value="DPS">DPS</option>
+                                    <option value="Suporte">Suporte</option>
+                                </select>
+                                <select value={classFilter} onChange={(e) => setClassFilter(e.target.value)} className={filterFieldCls} title="Filtrar por classe">
+                                    <option value="Todas">Todas as classes</option>
+                                    {classOptions.map(cl => <option key={cl} value={cl}>{cl}</option>)}
+                                </select>
+                                {hasGarageFilter && (
+                                    <button onClick={() => { setSearch(''); setRoleFilter('Todos'); setClassFilter('Todas'); }} className="px-3 py-2 rounded-lg text-sm font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all whitespace-nowrap">✕ Limpar</button>
+                                )}
+                            </div>
                             <DropZone locationId="garage" title="Personagens Disponíveis (Garagem)" isParty={false} onAddClick={() => openEditModal()} />
                         </div>
                         
@@ -847,13 +1119,13 @@
                         </div>
                         
                         {/* Tabuleiro Principal de Raids (Grid Flexível para as PTs e Lobbies de 8) */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-8 justify-items-center xl:justify-items-start w-full">
+                        <div className={activeRaid.mode === 4 ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 justify-items-center w-full" : "grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-8 justify-items-center xl:justify-items-start w-full"}>
                             {renderRaidLayout()}
                         </div>
                     </div>
 
                     <footer className="max-w-[1700px] mx-auto text-center text-[11px] text-slate-500 pb-6 px-4">
-                        Seus dados ficam salvos apenas neste navegador — use Exportar para fazer backup ou levar para outro dispositivo.
+                        Reset semanal: toda quarta-feira às 04:00 (horário de Brasília). Seus dados ficam salvos apenas neste navegador — use Exportar para fazer backup ou Compartilhar para enviar uma raid por link.
                         <br />Projeto de fã, sem afiliação com Smilegate RPG ou Amazon Games. Lost Ark é marca de seus respectivos donos.
                     </footer>
 
