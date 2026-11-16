@@ -151,8 +151,210 @@
         };
         const normText = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
+        // --- IDIOMAS (PT-BR / EN / ES) ---
+        // Os valores salvos (funções, sinergias, classes) continuam em português/inglês do jogo; só o texto exibido é traduzido.
+        const LANG_NAMES = { pt: 'Português (Brasil)', en: 'English', es: 'Español' };
+        const ROLE_KEYS = {
+            'DPS': 'role_dps', 'Suporte': 'role_support', 'Nenhuma': 'syn_none', 'Crítico': 'syn_crit',
+            'Dano Crítico': 'syn_critdmg', 'Armadura': 'syn_armor', 'Posicional': 'syn_pos', 'Dano': 'syn_dmg', 'Defesa': 'syn_def'
+        };
+        const I18N = {
+            pt: {
+                metaDesc: `Organizador de PTs e Raids de Lost Ark: monte grupos de 4 e 8 jogadores, confira sinergias e controle o reset semanal.`,
+                ogDesc: `Monte suas PTs, confira sinergias e controle o reset semanal. Grátis e sem cadastro.`,
+                role_dps: `DPS`, role_support: `Suporte`, syn_none: `Nenhuma`, syn_crit: `Crítico`, syn_critdmg: `Dano Crítico`, syn_armor: `Armadura`, syn_pos: `Posicional`, syn_dmg: `Dano`, syn_def: `Defesa`,
+                firstRaid: `Minha Primeira Raid`, newRaidDefault: `Nova Raid`, newRaidN: `Nova Raid {n}`, groupN: `Grupo {n}`, groupWord: `Grupo`,
+                langAria: `Idioma`,
+                undo: `Desfazer`, undoTip: `Desfazer a última alteração (Ctrl+Z)`,
+                resetAria: `Reset semanal`, resetTip: `Reset semanal: desmarca as PTs concluídas de todas as raides. O reset acontece toda quarta às 04:00 (Brasília).`,
+                moreAria: `Mais opções`, moreTip: `Compartilhar, exportar e importar`,
+                shareItem: `🔗 Compartilhar raid`, exportItem: `💾 Exportar backup`, importItem: `📂 Importar backup`,
+                resetBanner: `🔔 O reset semanal (quarta, 04:00 de Brasília) já aconteceu! Você ainda tem PTs marcadas como concluídas.`,
+                resetNow: `Resetar agora`, dismiss: `Dispensar`,
+                newRaid: `Nova Raid`,
+                raidIconTip: `Ícone da raid (cole um emoji)`, raidIconAria: `Ícone da raid`, raidTitleLabel: `Título da raid`,
+                ilvlRangeTip: `Filtra os personagens disponíveis por item level`, minPh: `mín`, maxPh: `máx`, ilvlMinAria: `iLvl mínimo`, ilvlMaxAria: `iLvl máximo`,
+                groupSizeAria: `Tamanho do grupo`,
+                mode4Tip: `Modo 4 jogadores (Abyssal): cada grupo é uma PT independente`, mode8Tip: `Modo 8 jogadores (Legion): os grupos formam lobbies de 8`,
+                addGroup: `Grupo Extra`, addGroupTip: `Adicionar um grupo extra`, deleteRaidTip: `Excluir esta aba de raid`, deleteRaidAria: `Excluir raid`,
+                panelToggle: `👥 Personagens disponíveis`, searchPh: `🔍 Buscar roster ou classe...`,
+                roleAll: `Todas as funções`, roleFilterTip: `Filtrar por função`, classAll: `Todas as classes`, classFilterTip: `Filtrar por classe`, clearFilters: `✕ Limpar filtros`,
+                availableTitle: `Personagens Disponíveis`, availableCount: `{n} Disponíveis`,
+                createChar: `Criar Personagem`, createCharTip: `Criar Novo Personagem`,
+                filtering: `Filtrando: iLvl`, upTo: `até {n}`,
+                emptyFiltered: `Nenhum personagem correspondente aos filtros`, emptyGarage: `Sem personagens disponíveis. Clique em 'Criar Personagem' para adicionar.`,
+                renameTip: `Toque para renomear a PT`, metaPT: `✨ PT Meta Perfeita`, supShort: `Sup`,
+                dupSynergy: `• Sinergia Duplicada`, dupSynergyTip: `Sinergias de classes iguais não acumulam!`,
+                unmarkTip: `Desmarcar conclusão`, markTip: `Marcar PT como Concluída`, removeGroupTip: `Remover Grupo`,
+                lobbyTitle: `Lobby de Raid (8 Players)`, avgIlvl: `iLvl Médio`, supsLabel: `Sups`,
+                lobbySynergies: `Sinergias Ativas no Lobby`, dupClassWarn: `⚠️ Classe duplicada na mesma PT!`, noSynergy: `Nenhuma sinergia ativa`,
+                ptFrame: `PT {n} · 4 Players`, synergiesShort: `Sinergias`,
+                builderTitle: `MONTAGEM DOS GRUPOS DA RAID`,
+                footer1: `Reset semanal: toda quarta-feira às 04:00 (horário de Brasília). Seus dados ficam salvos apenas neste navegador — use Exportar para fazer backup ou Compartilhar para enviar uma raid por link.`,
+                footer2: `Projeto de fã, sem afiliação com Smilegate RPG ou Amazon Games. Lost Ark é marca de seus respectivos donos.`,
+                editChar: `Editar Personagem`, newChar: `Novo Personagem`, editShort: `Editar`, rosterOwnerTip: `Dono do Roster`,
+                lblColor: `Cor`, lblClass: `Classe`, lblItemLevel: `Item Level`, lblPrimaryRole: `Função Principal`, lblSynergy: `Sinergia`, rosterPh: `Ex: Koij`,
+                deleteFromRoster: `Excluir do Roster`, deleteFromRosterTip: `Excluir personagem de TODAS as raides`,
+                cancel: `Cancelar`, save: `Salvar`, ok: `Entendido`, confirm: `Confirmar`,
+                shareNeedChars: `Coloque ao menos um personagem em uma PT antes de compartilhar.`,
+                shareLongWarn: `\n\nAtenção: o link é longo e pode ser cortado em alguns apps (ex.: Discord sem Nitro tem limite de 2000 caracteres).`,
+                shareCopied: `Link copiado! Quem abrir poderá adicionar a raid "{title}" ({n} personagens) como uma nova aba.`,
+                sharePrompt: `Copie o link abaixo:`, shareFail: `Não foi possível gerar o link neste navegador.`,
+                sharedSuffix: `(compartilhada)`,
+                importSharedConfirm: `Adicionar a raid compartilhada "{title}" ({n} personagens) como nova aba? Seus dados atuais não serão apagados.`,
+                shareInvalid: `Link de compartilhamento inválido ou corrompido.`,
+                needOneRaid: `Você precisa ter pelo menos uma raid configurada!`,
+                deleteRaidConfirm: `Tem certeza que deseja excluir a aba "{title}"? Seus personagens não serão deletados.`,
+                resetConfirm: `Deseja desmarcar TODAS as PTs concluídas em TODAS as Raides? Isso irá resetar a semana.`,
+                importConfirm: `Importar este backup vai substituir TODOS os seus dados atuais. Continuar?`,
+                importInvalid: `Arquivo inválido. Use um backup exportado por este organizador.`,
+                groupCompleted: `Este grupo já está marcado como concluído! Desmarque-o antes de alterar os membros.`,
+                groupFull: `Este grupo já está cheio (Máx 4 jogadores)!`,
+                rosterRequired: `O Roster é obrigatório!`,
+                deleteCharConfirm: `Remover personagem? Ele será excluído de TODAS as raides salvas.`
+            },
+            en: {
+                metaDesc: `Lost Ark party and raid organizer: build 4 and 8-player groups, check synergies and track the weekly reset.`,
+                ogDesc: `Build your parties, check synergies and track the weekly reset. Free, no sign-up.`,
+                role_dps: `DPS`, role_support: `Support`, syn_none: `None`, syn_crit: `Crit`, syn_critdmg: `Crit Damage`, syn_armor: `Armor`, syn_pos: `Positional`, syn_dmg: `Damage`, syn_def: `Defense`,
+                firstRaid: `My First Raid`, newRaidDefault: `New Raid`, newRaidN: `New Raid {n}`, groupN: `Group {n}`, groupWord: `Group`,
+                langAria: `Language`,
+                undo: `Undo`, undoTip: `Undo the last change (Ctrl+Z)`,
+                resetAria: `Weekly reset`, resetTip: `Weekly reset: unmarks the completed parties in all raids. The reset happens every Wednesday at 04:00 (Brasília time).`,
+                moreAria: `More options`, moreTip: `Share, export and import`,
+                shareItem: `🔗 Share raid`, exportItem: `💾 Export backup`, importItem: `📂 Import backup`,
+                resetBanner: `🔔 The weekly reset (Wednesday, 04:00 Brasília time) has already happened! You still have parties marked as completed.`,
+                resetNow: `Reset now`, dismiss: `Dismiss`,
+                newRaid: `New Raid`,
+                raidIconTip: `Raid icon (paste an emoji)`, raidIconAria: `Raid icon`, raidTitleLabel: `Raid title`,
+                ilvlRangeTip: `Filters the available characters by item level`, minPh: `min`, maxPh: `max`, ilvlMinAria: `Minimum iLvl`, ilvlMaxAria: `Maximum iLvl`,
+                groupSizeAria: `Group size`,
+                mode4Tip: `4-player mode (Abyssal): each group is an independent party`, mode8Tip: `8-player mode (Legion): groups are paired into 8-player lobbies`,
+                addGroup: `Extra Group`, addGroupTip: `Add an extra group`, deleteRaidTip: `Delete this raid tab`, deleteRaidAria: `Delete raid`,
+                panelToggle: `👥 Available characters`, searchPh: `🔍 Search roster or class...`,
+                roleAll: `All roles`, roleFilterTip: `Filter by role`, classAll: `All classes`, classFilterTip: `Filter by class`, clearFilters: `✕ Clear filters`,
+                availableTitle: `Available Characters`, availableCount: `{n} Available`,
+                createChar: `Create Character`, createCharTip: `Create New Character`,
+                filtering: `Filtering: iLvl`, upTo: `up to {n}`,
+                emptyFiltered: `No characters match the filters`, emptyGarage: `No characters available. Click 'Create Character' to add one.`,
+                renameTip: `Tap to rename the party`, metaPT: `✨ Perfect Meta Party`, supShort: `Sup`,
+                dupSynergy: `• Duplicate Synergy`, dupSynergyTip: `Synergies from the same class do not stack!`,
+                unmarkTip: `Unmark as completed`, markTip: `Mark party as Completed`, removeGroupTip: `Remove Group`,
+                lobbyTitle: `Raid Lobby (8 Players)`, avgIlvl: `Avg. iLvl`, supsLabel: `Sups`,
+                lobbySynergies: `Active Synergies in Lobby`, dupClassWarn: `⚠️ Duplicate class in the same party!`, noSynergy: `No active synergies`,
+                ptFrame: `Party {n} · 4 Players`, synergiesShort: `Synergies`,
+                builderTitle: `RAID GROUP BUILDER`,
+                footer1: `Weekly reset: every Wednesday at 04:00 (Brasília time). Your data is saved only in this browser — use Export to back it up or Share to send a raid by link.`,
+                footer2: `Fan project, not affiliated with Smilegate RPG or Amazon Games. Lost Ark is a trademark of its respective owners.`,
+                editChar: `Edit Character`, newChar: `New Character`, editShort: `Edit`, rosterOwnerTip: `Roster Owner`,
+                lblColor: `Color`, lblClass: `Class`, lblItemLevel: `Item Level`, lblPrimaryRole: `Main Role`, lblSynergy: `Synergy`, rosterPh: `e.g. Koij`,
+                deleteFromRoster: `Delete from Roster`, deleteFromRosterTip: `Delete character from ALL raids`,
+                cancel: `Cancel`, save: `Save`, ok: `Got it`, confirm: `Confirm`,
+                shareNeedChars: `Place at least one character in a party before sharing.`,
+                shareLongWarn: `\n\nWarning: the link is long and may be cut off in some apps (e.g. Discord without Nitro has a 2000-character limit).`,
+                shareCopied: `Link copied! Anyone who opens it can add the raid "{title}" ({n} characters) as a new tab.`,
+                sharePrompt: `Copy the link below:`, shareFail: `Could not generate the link in this browser.`,
+                sharedSuffix: `(shared)`,
+                importSharedConfirm: `Add the shared raid "{title}" ({n} characters) as a new tab? Your current data will not be erased.`,
+                shareInvalid: `Invalid or corrupted share link.`,
+                needOneRaid: `You need to have at least one raid set up!`,
+                deleteRaidConfirm: `Are you sure you want to delete the tab "{title}"? Your characters will not be deleted.`,
+                resetConfirm: `Do you want to unmark ALL completed parties in ALL raids? This will reset the week.`,
+                importConfirm: `Importing this backup will replace ALL your current data. Continue?`,
+                importInvalid: `Invalid file. Use a backup exported by this organizer.`,
+                groupCompleted: `This group is already marked as completed! Unmark it before changing its members.`,
+                groupFull: `This group is already full (max 4 players)!`,
+                rosterRequired: `Roster is required!`,
+                deleteCharConfirm: `Remove character? It will be deleted from ALL saved raids.`
+            },
+            es: {
+                metaDesc: `Organizador de grupos y raids de Lost Ark: arma grupos de 4 y 8 jugadores, revisa sinergias y controla el reseteo semanal.`,
+                ogDesc: `Arma tus grupos, revisa sinergias y controla el reseteo semanal. Gratis y sin registro.`,
+                role_dps: `DPS`, role_support: `Soporte`, syn_none: `Ninguna`, syn_crit: `Crítico`, syn_critdmg: `Daño crítico`, syn_armor: `Armadura`, syn_pos: `Posicional`, syn_dmg: `Daño`, syn_def: `Defensa`,
+                firstRaid: `Mi Primera Raid`, newRaidDefault: `Nueva Raid`, newRaidN: `Nueva Raid {n}`, groupN: `Grupo {n}`, groupWord: `Grupo`,
+                langAria: `Idioma`,
+                undo: `Deshacer`, undoTip: `Deshacer el último cambio (Ctrl+Z)`,
+                resetAria: `Reseteo semanal`, resetTip: `Reseteo semanal: desmarca los grupos completados de todas las raids. El reseteo ocurre todos los miércoles a las 04:00 (hora de Brasilia).`,
+                moreAria: `Más opciones`, moreTip: `Compartir, exportar e importar`,
+                shareItem: `🔗 Compartir raid`, exportItem: `💾 Exportar copia`, importItem: `📂 Importar copia`,
+                resetBanner: `🔔 ¡El reseteo semanal (miércoles, 04:00 hora de Brasilia) ya ocurrió! Todavía tienes grupos marcados como completados.`,
+                resetNow: `Resetear ahora`, dismiss: `Descartar`,
+                newRaid: `Nueva Raid`,
+                raidIconTip: `Icono de la raid (pega un emoji)`, raidIconAria: `Icono de la raid`, raidTitleLabel: `Título de la raid`,
+                ilvlRangeTip: `Filtra los personajes disponibles por nivel de objeto`, minPh: `mín`, maxPh: `máx`, ilvlMinAria: `iLvl mínimo`, ilvlMaxAria: `iLvl máximo`,
+                groupSizeAria: `Tamaño del grupo`,
+                mode4Tip: `Modo de 4 jugadores (Abisal): cada grupo es independiente`, mode8Tip: `Modo de 8 jugadores (Legión): los grupos forman lobbies de 8`,
+                addGroup: `Grupo extra`, addGroupTip: `Añadir un grupo extra`, deleteRaidTip: `Eliminar esta pestaña de raid`, deleteRaidAria: `Eliminar raid`,
+                panelToggle: `👥 Personajes disponibles`, searchPh: `🔍 Buscar roster o clase...`,
+                roleAll: `Todos los roles`, roleFilterTip: `Filtrar por rol`, classAll: `Todas las clases`, classFilterTip: `Filtrar por clase`, clearFilters: `✕ Quitar filtros`,
+                availableTitle: `Personajes Disponibles`, availableCount: `{n} Disponibles`,
+                createChar: `Crear Personaje`, createCharTip: `Crear Nuevo Personaje`,
+                filtering: `Filtrando: iLvl`, upTo: `hasta {n}`,
+                emptyFiltered: `Ningún personaje coincide con los filtros`, emptyGarage: `No hay personajes disponibles. Haz clic en 'Crear Personaje' para añadir uno.`,
+                renameTip: `Toca para renombrar el grupo`, metaPT: `✨ Grupo Meta Perfecto`, supShort: `Sup`,
+                dupSynergy: `• Sinergia Duplicada`, dupSynergyTip: `¡Las sinergias de clases iguales no se acumulan!`,
+                unmarkTip: `Desmarcar como completado`, markTip: `Marcar grupo como Completado`, removeGroupTip: `Quitar Grupo`,
+                lobbyTitle: `Lobby de Raid (8 Jugadores)`, avgIlvl: `iLvl Medio`, supsLabel: `Sups`,
+                lobbySynergies: `Sinergias Activas en el Lobby`, dupClassWarn: `⚠️ ¡Clase duplicada en el mismo grupo!`, noSynergy: `Ninguna sinergia activa`,
+                ptFrame: `Grupo {n} · 4 Jugadores`, synergiesShort: `Sinergias`,
+                builderTitle: `ARMADO DE GRUPOS DE LA RAID`,
+                footer1: `Reseteo semanal: todos los miércoles a las 04:00 (hora de Brasilia). Tus datos se guardan solo en este navegador: usa Exportar para hacer una copia o Compartir para enviar una raid por enlace.`,
+                footer2: `Proyecto de fans, sin afiliación con Smilegate RPG ni Amazon Games. Lost Ark es marca registrada de sus respectivos dueños.`,
+                editChar: `Editar Personaje`, newChar: `Nuevo Personaje`, editShort: `Editar`, rosterOwnerTip: `Dueño del Roster`,
+                lblColor: `Color`, lblClass: `Clase`, lblItemLevel: `Nivel de objeto`, lblPrimaryRole: `Rol Principal`, lblSynergy: `Sinergia`, rosterPh: `Ej: Koij`,
+                deleteFromRoster: `Eliminar del Roster`, deleteFromRosterTip: `Eliminar personaje de TODAS las raids`,
+                cancel: `Cancelar`, save: `Guardar`, ok: `Entendido`, confirm: `Confirmar`,
+                shareNeedChars: `Coloca al menos un personaje en un grupo antes de compartir.`,
+                shareLongWarn: `\n\nAtención: el enlace es largo y puede cortarse en algunas apps (p. ej., Discord sin Nitro tiene un límite de 2000 caracteres).`,
+                shareCopied: `¡Enlace copiado! Quien lo abra podrá añadir la raid "{title}" ({n} personajes) como una nueva pestaña.`,
+                sharePrompt: `Copia el enlace de abajo:`, shareFail: `No se pudo generar el enlace en este navegador.`,
+                sharedSuffix: `(compartida)`,
+                importSharedConfirm: `¿Añadir la raid compartida "{title}" ({n} personajes) como nueva pestaña? Tus datos actuales no se borrarán.`,
+                shareInvalid: `Enlace para compartir inválido o dañado.`,
+                needOneRaid: `¡Necesitas tener al menos una raid configurada!`,
+                deleteRaidConfirm: `¿Seguro que quieres eliminar la pestaña "{title}"? Tus personajes no se eliminarán.`,
+                resetConfirm: `¿Quieres desmarcar TODOS los grupos completados en TODAS las raids? Esto reseteará la semana.`,
+                importConfirm: `Importar esta copia reemplazará TODOS tus datos actuales. ¿Continuar?`,
+                importInvalid: `Archivo inválido. Usa una copia exportada por este organizador.`,
+                groupCompleted: `¡Este grupo ya está marcado como completado! Desmárcalo antes de cambiar a sus miembros.`,
+                groupFull: `¡Este grupo ya está lleno (máx. 4 jugadores)!`,
+                rosterRequired: `¡El Roster es obligatorio!`,
+                deleteCharConfirm: `¿Eliminar personaje? Se quitará de TODAS las raids guardadas.`
+            }
+        };
+        const detectLang = () => {
+            try {
+                const saved = localStorage.getItem('la_lang');
+                if (saved && I18N[saved]) return saved;
+            } catch (e) { /* ignore */ }
+            const nav = String((typeof navigator !== 'undefined' && navigator.language) || 'pt').toLowerCase();
+            if (nav.startsWith('es')) return 'es';
+            if (nav.startsWith('en')) return 'en';
+            return 'pt';
+        };
+
         // --- COMPONENTE PRINCIPAL ---
         function App() {
+            // 0. IDIOMA (PT-BR / EN / ES)
+            const [lang, setLang] = useState(detectLang);
+            const t = (key, vars) => {
+                let str = (I18N[lang] && I18N[lang][key]) ?? I18N.pt[key] ?? key;
+                if (vars) Object.keys(vars).forEach(k => { str = str.split('{' + k + '}').join(String(vars[k])); });
+                return str;
+            };
+            const roleLabel = (v) => (ROLE_KEYS[v] ? t(ROLE_KEYS[v]) : v);
+            const changeLang = (code) => {
+                setLang(code);
+                try { localStorage.setItem('la_lang', code); } catch (e) { /* ignore */ }
+            };
+            useEffect(() => {
+                document.documentElement.lang = { pt: 'pt-BR', en: 'en', es: 'es' }[lang] || 'pt-BR';
+                const md = document.querySelector('meta[name="description"]');
+                if (md) md.setAttribute('content', t('metaDesc'));
+                const og = document.querySelector('meta[property="og:description"]');
+                if (og) og.setAttribute('content', t('ogDesc'));
+            }, [lang]);
+
             // 1. ROSTER GLOBAL (Personagens são compartilhados entre todas as Raids)
             const [characters, setCharacters] = useState(() => {
                 const saved = localStorage.getItem('la_global_chars');
@@ -193,18 +395,18 @@
                     
                     return [{
                         id: 'default_raid',
-                        title: localStorage.getItem('la_title') || 'Minha Primeira Raid',
+                        title: localStorage.getItem('la_title') || t('firstRaid'),
                         emoji: localStorage.getItem('la_emoji') || '🐉',
                         minIlevel: '',
                         maxIlevel: '',
-                        groups: (JSON.parse(localStorage.getItem('la_groups')) || [{ id: 'party1', title: 'Grupo 1' }, { id: 'party2', title: 'Grupo 2' }]).map(g => ({...g, completed: false})),
+                        groups: (JSON.parse(localStorage.getItem('la_groups')) || [{ id: 'party1', title: t('groupN', { n: 1 }) }, { id: 'party2', title: t('groupN', { n: 2 }) }]).map(g => ({...g, completed: false})),
                         assignments: assignments
                     }];
                 }
                 
                 return [{
-                    id: Date.now().toString(), title: 'Nova Raid', emoji: '⚔️', minIlevel: '', maxIlevel: '',
-                    groups: [{ id: 'party1', title: 'Grupo 1', completed: false }, { id: 'party2', title: 'Grupo 2', completed: false }], assignments: {}
+                    id: Date.now().toString(), title: t('newRaidDefault'), emoji: '⚔️', minIlevel: '', maxIlevel: '',
+                    groups: [{ id: 'party1', title: t('groupN', { n: 1 }), completed: false }, { id: 'party2', title: t('groupN', { n: 2 }), completed: false }], assignments: {}
                 }];
             });
 
@@ -339,21 +541,21 @@
             const shareLink = async () => {
                 const assigned = new Set(Object.keys(activeRaid.assignments));
                 const chars = characters.filter(c => assigned.has(c.id));
-                if (chars.length === 0) return showAlert('Coloque ao menos um personagem em uma PT antes de compartilhar.');
+                if (chars.length === 0) return showAlert(t('shareNeedChars'));
                 const colors = {};
                 chars.forEach(c => { if (rosterColors[c.roster]) colors[c.roster] = rosterColors[c.roster]; });
                 try {
                     const code = await encodeShare({ app: 'lostark-raid-organizer', v: 1, raid: activeRaid, characters: chars, colors });
                     const url = `${location.href.split('#')[0]}#s=${code}`;
-                    const longWarn = url.length > 1900 ? '\n\nAtenção: o link é longo e pode ser cortado em alguns apps (ex.: Discord sem Nitro tem limite de 2000 caracteres).' : '';
+                    const longWarn = url.length > 1900 ? t('shareLongWarn') : '';
                     try {
                         await navigator.clipboard.writeText(url);
-                        showAlert(`Link copiado! Quem abrir poderá adicionar a raid "${activeRaid.title}" (${chars.length} personagens) como uma nova aba.${longWarn}`);
+                        showAlert(t('shareCopied', { title: activeRaid.title, n: chars.length }) + longWarn);
                     } catch {
-                        window.prompt('Copie o link abaixo:', url);
+                        window.prompt(t('sharePrompt'), url);
                     }
                 } catch {
-                    showAlert('Não foi possível gerar o link neste navegador.');
+                    showAlert(t('shareFail'));
                 }
             };
 
@@ -373,7 +575,7 @@
                     };
                 });
                 const r = d.raid;
-                const groups = r.groups.slice(0, 30).map(g => ({ id: String(g.id), title: String(g.title || 'Grupo').slice(0, 28), completed: false }));
+                const groups = r.groups.slice(0, 30).map(g => ({ id: String(g.id), title: String(g.title || t('groupWord')).slice(0, 28), completed: false }));
                 const groupIds = new Set(groups.map(g => g.id));
                 const assignments = {};
                 Object.entries(r.assignments || {}).forEach(([cid, loc]) => {
@@ -383,7 +585,7 @@
                 Object.entries(d.colors || {}).forEach(([k, v]) => { if (/^#[0-9a-f]{3,8}$/i.test(String(v))) colors[String(k).slice(0, 40)] = v; });
                 const newRaid = {
                     id: `sh${stamp}`,
-                    title: `${String(r.title || 'Raid').slice(0, 40)} (compartilhada)`,
+                    title: `${String(r.title || 'Raid').slice(0, 40)} ${t('sharedSuffix')}`,
                     emoji: String(r.emoji || '⚔️').slice(0, 8),
                     minIlevel: '', maxIlevel: '',
                     mode: r.mode === 4 ? 4 : 8,
@@ -403,9 +605,9 @@
                         const d = await decodeShare(m[1]);
                         if (!d || d.app !== 'lostark-raid-organizer' || !d.raid || !Array.isArray(d.raid.groups) || !Array.isArray(d.characters)) throw new Error('invalid');
                         history.replaceState(null, '', location.href.split('#')[0]);
-                        showConfirm(`Adicionar a raid compartilhada "${String(d.raid.title || 'Raid').slice(0, 40)}" (${d.characters.length} personagens) como nova aba? Seus dados atuais não serão apagados.`, () => importShared(d));
+                        showConfirm(t('importSharedConfirm', { title: String(d.raid.title || 'Raid').slice(0, 40), n: d.characters.length }), () => importShared(d));
                     } catch {
-                        showAlert('Link de compartilhamento inválido ou corrompido.');
+                        showAlert(t('shareInvalid'));
                     }
                 })();
             }, []);
@@ -414,11 +616,11 @@
             const createNewRaid = () => {
                 const newRaid = {
                     id: Date.now().toString(),
-                    title: `Nova Raid ${raids.length + 1}`,
+                    title: t('newRaidN', { n: raids.length + 1 }),
                     emoji: '📝',
                     minIlevel: '',
                     maxIlevel: '',
-                    groups: [{ id: 'party1', title: 'Grupo 1', completed: false }, { id: 'party2', title: 'Grupo 2', completed: false }],
+                    groups: [{ id: 'party1', title: t('groupN', { n: 1 }), completed: false }, { id: 'party2', title: t('groupN', { n: 2 }), completed: false }],
                     assignments: {}
                 };
                 setRaids([...raids, newRaid]);
@@ -426,8 +628,8 @@
             };
 
             const deleteCurrentRaid = () => {
-                if (raids.length === 1) return showAlert("Você precisa ter pelo menos uma raid configurada!");
-                showConfirm(`Tem certeza que deseja excluir a aba "${activeRaid.title}"? Seus personagens não serão deletados.`, () => {
+                if (raids.length === 1) return showAlert(t('needOneRaid'));
+                showConfirm(t('deleteRaidConfirm', { title: activeRaid.title }), () => {
                     const newRaids = raids.filter(r => r.id !== activeRaidId);
                     setRaids(newRaids);
                     setActiveRaidId(newRaids[0].id);
@@ -436,7 +638,7 @@
 
             // --- RESET SEMANAL ---
             const resetAllWeekly = () => {
-                showConfirm("Deseja desmarcar TODAS as PTs concluídas em TODAS as Raides? Isso irá resetar a semana.", applyWeeklyReset);
+                showConfirm(t('resetConfirm'), applyWeeklyReset);
             };
 
             // --- BACKUP: EXPORTAR / IMPORTAR ---
@@ -460,7 +662,7 @@
                     try {
                         const d = JSON.parse(reader.result);
                         if (!Array.isArray(d.characters) || !Array.isArray(d.raids) || d.raids.length === 0) throw new Error('invalid');
-                        showConfirm('Importar este backup vai substituir TODOS os seus dados atuais. Continuar?', () => {
+                        showConfirm(t('importConfirm'), () => {
                             setCharacters(d.characters);
                             setRosterColors(d.rosterColors || {});
                             setRaids(d.raids.map(r => ({
@@ -470,7 +672,7 @@
                             setActiveRaidId(d.raids[0].id);
                         });
                     } catch {
-                        showAlert('Arquivo inválido. Use um backup exportado por este organizador.');
+                        showAlert(t('importInvalid'));
                     }
                 };
                 reader.readAsText(file);
@@ -500,7 +702,7 @@
                     // Bloquear drop se o grupo estiver concluído
                     const targetGroup = raid.groups.find(g => g.id === newLocation);
                     if (targetGroup && targetGroup.completed) {
-                        showAlert('Este grupo já está marcado como concluído! Desmarque-o antes de alterar os membros.');
+                        showAlert(t('groupCompleted'));
                         capacityFull = true;
                         return raid;
                     }
@@ -509,7 +711,7 @@
                     const partyCount = Object.keys(raid.assignments).filter(k => raid.assignments[k] === newLocation).length;
                     
                     if (currentLoc !== newLocation && newLocation !== 'garage' && partyCount >= 4) {
-                        showAlert('Este grupo já está cheio (Máx 4 jogadores)!');
+                        showAlert(t('groupFull'));
                         capacityFull = true;
                         return raid;
                     }
@@ -544,7 +746,7 @@
             const addGroup = () => {
                 updateActiveRaid(raid => ({
                     ...raid,
-                    groups: [...raid.groups, { id: `party${Date.now()}`, title: `Grupo ${raid.groups.length + 1}`, completed: false }]
+                    groups: [...raid.groups, { id: `party${Date.now()}`, title: t('groupN', { n: raid.groups.length + 1 }), completed: false }]
                 }));
             };
 
@@ -554,7 +756,7 @@
                     ...raid,
                     groups: raid.groups.map(g => {
                         if (g.id !== groupId) return g;
-                        const fallback = `Grupo ${raid.groups.findIndex(x => x.id === groupId) + 1}`;
+                        const fallback = t('groupN', { n: raid.groups.findIndex(x => x.id === groupId) + 1 });
                         return { ...g, title: clean || fallback };
                     })
                 }));
@@ -573,10 +775,10 @@
             const setRaidLayout = (size) => {
                 updateActiveRaid(raid => {
                     let groups = [...raid.groups];
-                    if (groups.length === 0) groups.push({ id: 'party1', title: 'Grupo 1', completed: false });
+                    if (groups.length === 0) groups.push({ id: 'party1', title: t('groupN', { n: 1 }), completed: false });
                     // Modo 8: garante número par de grupos para fechar o(s) lobby(s)
                     if (size === 8 && groups.length % 2 !== 0) {
-                        groups.push({ id: `party${Date.now()}`, title: `Grupo ${groups.length + 1}`, completed: false });
+                        groups.push({ id: `party${Date.now()}`, title: t('groupN', { n: groups.length + 1 }), completed: false });
                     }
                     return { ...raid, mode: size, groups };
                 });
@@ -596,7 +798,7 @@
             };
 
             const saveCharacter = () => {
-                if (!editingChar.roster.trim()) return showAlert("O Roster é obrigatório!");
+                if (!editingChar.roster.trim()) return showAlert(t('rosterRequired'));
                 setRosterColors(prev => ({ ...prev, [editingChar.roster]: editingChar.tempColor }));
                 const { tempColor, ...charDataToSave } = editingChar;
 
@@ -608,7 +810,7 @@
             };
 
             const deleteCharacter = (id) => {
-                showConfirm("Remover personagem? Ele será excluído de TODAS as raides salvas.", () => {
+                showConfirm(t('deleteCharConfirm'), () => {
                     setCharacters(prev => prev.filter(c => c.id !== id));
                     setRaids(prev => prev.map(r => {
                         const newAssignments = { ...r.assignments };
@@ -623,14 +825,14 @@
             const renderRoleIcon = (role, key) => {
                 if (!role || role === 'Nenhuma') return null;
                 switch (role) {
-                    case 'DPS': return <Icons.Sword key={key} className="text-gray-200" title="DPS" />;
-                    case 'Suporte': return <Icons.Plus key={key} className="text-green-400" title="Suporte" />;
-                    case 'Crítico': return <Icons.Zap key={key} className="text-yellow-400" title="Crítico" />;
-                    case 'Dano Crítico': return <Icons.Flame key={key} className="text-red-500" title="Dano Crítico" />;
-                    case 'Armadura': return <Icons.ShieldAlert key={key} className="text-orange-400" title="Armadura" />;
-                    case 'Posicional': return <Icons.Crosshair key={key} className="text-purple-400" title="Posicional" />;
-                    case 'Dano': return <Icons.Sword key={key} className="text-red-400" title="Dano" />;
-                    case 'Defesa': return <Icons.Shield key={key} className="text-blue-400" title="Defesa" />;
+                    case 'DPS': return <Icons.Sword key={key} className="text-gray-200" title={roleLabel('DPS')} />;
+                    case 'Suporte': return <Icons.Plus key={key} className="text-green-400" title={roleLabel('Suporte')} />;
+                    case 'Crítico': return <Icons.Zap key={key} className="text-yellow-400" title={roleLabel('Crítico')} />;
+                    case 'Dano Crítico': return <Icons.Flame key={key} className="text-red-500" title={roleLabel('Dano Crítico')} />;
+                    case 'Armadura': return <Icons.ShieldAlert key={key} className="text-orange-400" title={roleLabel('Armadura')} />;
+                    case 'Posicional': return <Icons.Crosshair key={key} className="text-purple-400" title={roleLabel('Posicional')} />;
+                    case 'Dano': return <Icons.Sword key={key} className="text-red-400" title={roleLabel('Dano')} />;
+                    case 'Defesa': return <Icons.Shield key={key} className="text-blue-400" title={roleLabel('Defesa')} />;
                     default: return null;
                 }
             };
@@ -657,8 +859,8 @@
                              }}>
                             
                             {!isDisabled && (
-                                <button onClick={() => openEditModal(char)} className="absolute inset-0 bg-slate-900/90 rounded-lg opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 transition-opacity z-10 text-white font-extrabold border border-slate-650" title="Editar Personagem">
-                                    <Icons.Edit2 size={14} /> <span className="text-[10px] tracking-wide uppercase">Editar</span>
+                                <button onClick={() => openEditModal(char)} className="absolute inset-0 bg-slate-900/90 rounded-lg opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 transition-opacity z-10 text-white font-extrabold border border-slate-650" title={t('editChar')}>
+                                    <Icons.Edit2 size={14} /> <span className="text-[10px] tracking-wide uppercase">{t('editShort')}</span>
                                 </button>
                             )}
 
@@ -667,7 +869,7 @@
                                 <span className="text-lg flex-shrink-0" title={char.charClass}>{CLASS_ICONS[char.charClass] || '❓'}</span>
                                 <div className="flex flex-col min-w-0">
                                     <span className="font-extrabold text-white text-[11px] leading-tight truncate [text-shadow:_0_1px_2px_black]">{char.charClass}</span>
-                                    <span className="text-[8px] font-bold text-amber-300 truncate tracking-wider bg-slate-950/85 px-1 py-0.5 rounded border border-slate-800/40 uppercase w-max [text-shadow:_0_1px_1px_black] leading-none mt-0.5" title="Dono do Roster">{char.roster}</span>
+                                    <span className="text-[8px] font-bold text-amber-300 truncate tracking-wider bg-slate-950/85 px-1 py-0.5 rounded border border-slate-800/40 uppercase w-max [text-shadow:_0_1px_1px_black] leading-none mt-0.5" title={t('rosterOwnerTip')}>{char.roster}</span>
                                 </div>
                             </div>
 
@@ -710,7 +912,7 @@
                         </div>
 
                         {!isDisabled && (
-                            <button onClick={() => openEditModal(char)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1.5 bg-slate-900 rounded-lg hover:bg-black transition-opacity z-10 text-white shadow-lg border border-slate-600 flex items-center justify-center" title="Editar Personagem">
+                            <button onClick={() => openEditModal(char)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1.5 bg-slate-900 rounded-lg hover:bg-black transition-opacity z-10 text-white shadow-lg border border-slate-600 flex items-center justify-center" title={t('editChar')}>
                                 <Icons.Edit2 size={16} />
                             </button>
                         )}
@@ -787,7 +989,7 @@
                                             type="text"
                                             defaultValue={title}
                                             maxLength={28}
-                                            title="Toque para renomear a PT"
+                                            title={t('renameTip')}
                                             onBlur={(e) => { if (e.target.value !== title) renameGroup(locationId, e.target.value); }}
                                             onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
                                             className={`bg-transparent min-w-0 w-36 font-extrabold text-sm border-b border-dashed border-slate-600/60 hover:border-slate-400 focus:border-indigo-400 focus:outline-none transition-colors ${isCompleted ? 'line-through' : ''}`}
@@ -795,19 +997,19 @@
                                     ) : title}
                                     {!isParty && (
                                         <span className="text-[11px] font-bold text-slate-400 bg-slate-900/65 px-2 py-0.5 rounded-full border border-slate-700/65 ml-2 shadow-inner">
-                                            {charsInZone.length} Disponíveis
+                                            {t('availableCount', { n: charsInZone.length })}
                                         </span>
                                     )}
                                 </h2>
                                 {isParty && charsInZone.length > 0 && (
                                     <div className="flex flex-wrap gap-1 mt-0.5 text-[9px] font-extrabold">
                                         {isMeta ? (
-                                            <span className="text-green-400 uppercase tracking-wide">✨ PT Meta Perfeita</span>
+                                            <span className="text-green-400 uppercase tracking-wide">{t('metaPT')}</span>
                                         ) : (
-                                            <span className="text-slate-400 tracking-wide uppercase">{supports} Sup / {dps} DPS</span>
+                                            <span className="text-slate-400 tracking-wide uppercase">{supports} {t('supShort')} / {dps} DPS</span>
                                         )}
                                         {hasDuplicates && (
-                                            <span className="text-amber-400 uppercase tracking-wide" title="Sinergias de classes iguais não acumulam!">• Sinergia Duplicada</span>
+                                            <span className="text-amber-400 uppercase tracking-wide" title={t('dupSynergyTip')}>{t('dupSynergy')}</span>
                                         )}
                                     </div>
                                 )}
@@ -818,21 +1020,21 @@
                                         <button 
                                             onClick={() => toggleGroupCompletion(locationId)} 
                                             className={`p-1 rounded transition-all ${isCompleted ? 'bg-green-900 text-green-300 hover:bg-green-800' : 'bg-slate-700 text-slate-400 hover:text-green-400'}`}
-                                            title={isCompleted ? "Desmarcar conclusão" : "Marcar PT como Concluída"}
+                                            title={isCompleted ? t('unmarkTip') : t('markTip')}
                                         >
                                             <Icons.CheckCircle size={14} />
                                         </button>
                                         <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${charsInZone.length === 4 ? 'bg-indigo-900/50 text-indigo-300' : 'bg-slate-700 text-slate-300'}`}>{charsInZone.length}/4</span>
-                                        <button onClick={() => removeGroup(locationId)} className="text-slate-500 hover:text-red-400" title="Remover Grupo"><Icons.X size={14} /></button>
+                                        <button onClick={() => removeGroup(locationId)} className="text-slate-500 hover:text-red-400" title={t('removeGroupTip')}><Icons.X size={14} /></button>
                                     </>
                                 ) : onAddClick ? (
                                     <button 
                                         onClick={onAddClick} 
                                         className={`px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 hover:border-indigo-400 text-white text-xs font-extrabold rounded-lg transition-all flex items-center gap-1.5 shadow-md border border-indigo-600 active:scale-95 ${sidebar ? 'w-full justify-center' : ''}`} 
-                                        title="Criar Novo Personagem"
+                                        title={t('createCharTip')}
                                     >
                                         <Icons.Plus size={12} strokeWidth="3" />
-                                        <span>Criar Personagem</span>
+                                        <span>{t('createChar')}</span>
                                     </button>
                                 ) : null}
                             </div>
@@ -840,7 +1042,7 @@
 
                         {(!isParty && (activeRaid.minIlevel || activeRaid.maxIlevel)) && (
                             <div className="text-xs text-indigo-300 mb-4 font-bold flex items-center gap-1.5 bg-indigo-900/40 p-2 rounded-lg border border-indigo-500/30 w-max shadow-sm">
-                                <Icons.Filter size={14} /> Filtrando: iLvl {activeRaid.minIlevel || '0'} {activeRaid.maxIlevel ? `até ${activeRaid.maxIlevel}` : '+'}
+                                <Icons.Filter size={14} /> {t('filtering')} {activeRaid.minIlevel || '0'} {activeRaid.maxIlevel ? t('upTo', { n: activeRaid.maxIlevel }) : '+'}
                             </div>
                         )}
 
@@ -851,7 +1053,7 @@
                         }>
                             {charsInZone.length === 0 ? (
                                 <div className={`flex items-center justify-center text-slate-500 border-2 border-dashed border-slate-700/60 rounded-lg p-6 text-center text-xs ${isParty ? 'flex-1 min-h-[120px]' : 'col-span-full py-12 bg-slate-900/10'}`}>
-                                    {(!isParty && (activeRaid.minIlevel || activeRaid.maxIlevel || hasGarageFilter)) ? "Nenhum personagem correspondente aos filtros" : "Sem personagens disponíveis. Clique em 'Criar Personagem' para adicionar."}
+                                    {(!isParty && (activeRaid.minIlevel || activeRaid.maxIlevel || hasGarageFilter)) ? t('emptyFiltered') : t('emptyGarage')}
                                 </div>
                             ) : charsInZone.map(char => <CharacterCard key={char.id} char={char} isDisabled={isCompleted} compact={compact || sidebar} />)}
                         </div>
@@ -930,7 +1132,7 @@
                                             <Icons.Users size={22} />
                                         </div>
                                         <div>
-                                            <h3 className="text-base font-black text-white tracking-wide">Lobby de Raid (8 Players)</h3>
+                                            <h3 className="text-base font-black text-white tracking-wide">{t('lobbyTitle')}</h3>
                                             <p className="text-[10px] text-indigo-300 font-extrabold tracking-wider uppercase">{g1.title} + {g2.title}</p>
                                         </div>
                                     </div>
@@ -938,12 +1140,12 @@
                                     <div className="flex items-center gap-2 flex-wrap">
                                         {avgIlvl && (
                                             <span className="bg-slate-900/60 text-indigo-200 text-xs font-bold px-2 py-0.5 rounded border border-slate-700">
-                                                iLvl Médio: {avgIlvl}
+                                                {t('avgIlvl')}: {avgIlvl}
                                             </span>
                                         )}
                                         <div className="flex gap-1 text-[10px]">
                                             <span className={`px-2 py-0.5 rounded font-extrabold border ${totalSups === 2 ? 'bg-green-950/40 text-green-400 border-green-800/30' : 'bg-slate-900/60 text-slate-400 border-slate-700'}`}>
-                                                Sups: {totalSups}/2
+                                                {t('supsLabel')}: {totalSups}/2
                                             </span>
                                             <span className={`px-2 py-0.5 rounded font-extrabold border ${totalDps === 6 ? 'bg-indigo-950/40 text-indigo-300 border-indigo-800/30' : 'bg-slate-900/60 text-slate-400 border-slate-700'}`}>
                                                 DPS: {totalDps}/6
@@ -961,21 +1163,21 @@
                                 {/* Painel de Sinergias Combinadas */}
                                 <div className="bg-slate-900/45 p-3 rounded-xl border border-slate-700/50 text-xs text-slate-400 flex flex-col gap-1.5">
                                     <div className="flex justify-between items-center flex-wrap gap-1">
-                                        <span className="font-extrabold text-indigo-400 uppercase tracking-wider text-[10px]">Sinergias Ativas no Lobby</span>
+                                        <span className="font-extrabold text-indigo-400 uppercase tracking-wider text-[10px]">{t('lobbySynergies')}</span>
                                         {hasLobbyDuplicates && (
                                             <span className="text-[10px] text-amber-400 font-bold flex items-center gap-1">
-                                                ⚠️ Classe duplicada na mesma PT!
+                                                {t('dupClassWarn')}
                                             </span>
                                         )}
                                     </div>
                                     <div className="flex flex-wrap gap-1.5 mt-0.5">
                                         {uniqueSynergies.map(syn => (
                                             <span key={syn} className="bg-slate-850 text-indigo-200 px-2 py-1 rounded-lg border border-slate-700/50 flex items-center gap-1.5 font-semibold shadow-sm">
-                                                {renderRoleIcon(syn, syn)} {syn}
+                                                {renderRoleIcon(syn, syn)} {roleLabel(syn)}
                                             </span>
                                         ))}
                                         {uniqueSynergies.length === 0 && (
-                                            <span className="text-slate-500 italic">Nenhuma sinergia ativa</span>
+                                            <span className="text-slate-500 italic">{t('noSynergy')}</span>
                                         )}
                                     </div>
                                 </div>
@@ -990,18 +1192,18 @@
                         return (
                             <div key={`single-${g1.id}`} className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 shadow-xl flex flex-col gap-3 w-full max-w-[380px] hover:border-indigo-500/35 transition-all duration-300">
                                 <div className="flex items-center justify-between border-b border-slate-700/70 pb-2">
-                                    <span className="text-[10px] font-black tracking-widest uppercase text-indigo-300">PT {index + 1} · 4 Players</span>
-                                    {ptAvg && <span className="bg-slate-900/60 text-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded border border-slate-700">iLvl Médio: {ptAvg}</span>}
+                                    <span className="text-[10px] font-black tracking-widest uppercase text-indigo-300">{t('ptFrame', { n: index + 1 })}</span>
+                                    {ptAvg && <span className="bg-slate-900/60 text-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded border border-slate-700">{t('avgIlvl')}: {ptAvg}</span>}
                                 </div>
                                 <DropZone locationId={g1.id} title={g1.title} isParty={true} compact={true} />
                                 <div className="bg-slate-900/45 p-2.5 rounded-xl border border-slate-700/50 text-xs text-slate-400 flex flex-wrap gap-1.5 items-center">
-                                    <span className="font-extrabold text-indigo-400 uppercase tracking-wider text-[10px] mr-1">Sinergias</span>
+                                    <span className="font-extrabold text-indigo-400 uppercase tracking-wider text-[10px] mr-1">{t('synergiesShort')}</span>
                                     {ptSynergies.map(syn => (
                                         <span key={syn} className="bg-slate-850 text-indigo-200 px-2 py-1 rounded-lg border border-slate-700/50 flex items-center gap-1.5 font-semibold shadow-sm">
-                                            {renderRoleIcon(syn, syn)} {syn}
+                                            {renderRoleIcon(syn, syn)} {roleLabel(syn)}
                                         </span>
                                     ))}
-                                    {ptSynergies.length === 0 && <span className="text-slate-500 italic">Nenhuma</span>}
+                                    {ptSynergies.length === 0 && <span className="text-slate-500 italic">{roleLabel('Nenhuma')}</span>}
                                 </div>
                             </div>
                         );
@@ -1017,17 +1219,22 @@
                     
                     <header className="max-w-[1700px] mx-auto pt-4 pb-8 px-4">
                         <div className="flex justify-end items-center gap-1.5 mb-2">
-                            <button onClick={undo} disabled={historyCount === 0} aria-label="Desfazer" className="w-8 h-8 flex items-center justify-center rounded-lg text-sm bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-slate-800/80" title="Desfazer a última alteração (Ctrl+Z)">↩️</button>
-                            <button onClick={resetAllWeekly} aria-label="Reset semanal" className="h-8 px-2.5 flex items-center gap-1.5 rounded-lg text-xs font-bold bg-green-900/30 text-green-400 hover:bg-green-900/60 hover:text-green-300 border border-green-800/40 transition-all whitespace-nowrap" title="Reset semanal: desmarca as PTs concluídas de todas as raides. O reset acontece toda quarta às 04:00 (Brasília).">
+                            <div className="flex h-8 rounded-lg overflow-hidden border border-slate-700 bg-slate-800/80 mr-1" role="group" aria-label={t('langAria')}>
+                                {[['pt', 'PT'], ['en', 'EN'], ['es', 'ES']].map(([code, label]) => (
+                                    <button key={code} onClick={() => changeLang(code)} aria-pressed={lang === code} title={LANG_NAMES[code]} className={`w-8 text-[11px] font-black transition-all ${lang === code ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700'}`}>{label}</button>
+                                ))}
+                            </div>
+                            <button onClick={undo} disabled={historyCount === 0} aria-label={t('undo')} className="w-8 h-8 flex items-center justify-center rounded-lg text-sm bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-slate-800/80" title={t('undoTip')}>↩️</button>
+                            <button onClick={resetAllWeekly} aria-label={t('resetAria')} className="h-8 px-2.5 flex items-center gap-1.5 rounded-lg text-xs font-bold bg-green-900/30 text-green-400 hover:bg-green-900/60 hover:text-green-300 border border-green-800/40 transition-all whitespace-nowrap" title={t('resetTip')}>
                                 <Icons.RefreshCw size={13} /> <span className="opacity-80">{formatCountdown(nextResetIn)}</span>
                             </button>
                             <div className="relative" ref={menuRef}>
-                                <button onClick={() => setMenuOpen(o => !o)} aria-label="Mais opções" aria-expanded={menuOpen} className="w-8 h-8 flex items-center justify-center rounded-lg text-base font-black bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all" title="Compartilhar, exportar e importar">⋯</button>
+                                <button onClick={() => setMenuOpen(o => !o)} aria-label={t('moreAria')} aria-expanded={menuOpen} className="w-8 h-8 flex items-center justify-center rounded-lg text-base font-black bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all" title={t('moreTip')}>⋯</button>
                                 {menuOpen && (
                                     <div className="absolute right-0 top-full mt-1.5 w-52 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl py-1 z-50 text-sm">
-                                        <button onClick={() => { setMenuOpen(false); shareLink(); }} className="w-full text-left px-4 py-2 text-slate-200 hover:bg-slate-700 font-semibold">🔗 Compartilhar raid</button>
-                                        <button onClick={() => { setMenuOpen(false); exportData(); }} className="w-full text-left px-4 py-2 text-slate-200 hover:bg-slate-700 font-semibold">💾 Exportar backup</button>
-                                        <button onClick={() => { setMenuOpen(false); importInputRef.current && importInputRef.current.click(); }} className="w-full text-left px-4 py-2 text-slate-200 hover:bg-slate-700 font-semibold">📂 Importar backup</button>
+                                        <button onClick={() => { setMenuOpen(false); shareLink(); }} className="w-full text-left px-4 py-2 text-slate-200 hover:bg-slate-700 font-semibold">{t('shareItem')}</button>
+                                        <button onClick={() => { setMenuOpen(false); exportData(); }} className="w-full text-left px-4 py-2 text-slate-200 hover:bg-slate-700 font-semibold">{t('exportItem')}</button>
+                                        <button onClick={() => { setMenuOpen(false); importInputRef.current && importInputRef.current.click(); }} className="w-full text-left px-4 py-2 text-slate-200 hover:bg-slate-700 font-semibold">{t('importItem')}</button>
                                     </div>
                                 )}
                             </div>
@@ -1044,10 +1251,10 @@
                     {resetPending && (
                         <div className="max-w-[1700px] mx-auto mb-4 px-4">
                             <div className="bg-amber-900/30 border border-amber-700/50 text-amber-200 rounded-xl p-3 flex flex-wrap items-center gap-3 justify-between">
-                                <span className="font-bold text-sm">🔔 O reset semanal (quarta, 04:00 de Brasília) já aconteceu! Você ainda tem PTs marcadas como concluídas.</span>
+                                <span className="font-bold text-sm">{t('resetBanner')}</span>
                                 <div className="flex gap-2">
-                                    <button onClick={applyWeeklyReset} className="px-4 py-1.5 rounded-lg font-bold bg-green-700 hover:bg-green-600 text-white text-sm transition-all">Resetar agora</button>
-                                    <button onClick={() => setResetAck(currentReset)} className="px-4 py-1.5 rounded-lg font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm border border-slate-700 transition-all">Dispensar</button>
+                                    <button onClick={applyWeeklyReset} className="px-4 py-1.5 rounded-lg font-bold bg-green-700 hover:bg-green-600 text-white text-sm transition-all">{t('resetNow')}</button>
+                                    <button onClick={() => setResetAck(currentReset)} className="px-4 py-1.5 rounded-lg font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm border border-slate-700 transition-all">{t('dismiss')}</button>
                                 </div>
                             </div>
                         </div>
@@ -1068,7 +1275,7 @@
                             onClick={createNewRaid}
                             className="px-4 py-3 rounded-t-xl font-bold bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white flex items-center gap-1 transition-all"
                         >
-                            <Icons.Plus size={16} /> Nova Raid
+                            <Icons.Plus size={16} /> {t('newRaid')}
                         </button>
                         
 
@@ -1076,25 +1283,25 @@
 
                     {/* Barra compacta da Raid Ativa */}
                     <div className="max-w-[1700px] mx-auto mb-5 bg-slate-800 p-3 rounded-b-xl rounded-tr-xl shadow-lg border border-slate-700 flex flex-wrap items-center gap-2 sm:gap-3">
-                        <input type="text" value={activeRaid.emoji} onChange={(e) => updateActiveRaid(r => ({ ...r, emoji: e.target.value }))} className="w-11 h-10 bg-slate-900/60 text-xl text-center rounded-lg border border-transparent hover:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" title="Ícone da raid (cole um emoji)" aria-label="Ícone da raid" />
+                        <input type="text" value={activeRaid.emoji} onChange={(e) => updateActiveRaid(r => ({ ...r, emoji: e.target.value }))} className="w-11 h-10 bg-slate-900/60 text-xl text-center rounded-lg border border-transparent hover:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" title={t('raidIconTip')} aria-label={t('raidIconAria')} />
 
-                        <input type="text" value={activeRaid.title} onChange={(e) => updateActiveRaid(r => ({ ...r, title: e.target.value }))} className="flex-1 min-w-[170px] h-10 bg-slate-900/60 text-lg sm:text-xl font-extrabold text-white px-3 rounded-lg border border-transparent hover:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" title="Título da raid" aria-label="Título da raid" />
+                        <input type="text" value={activeRaid.title} onChange={(e) => updateActiveRaid(r => ({ ...r, title: e.target.value }))} className="flex-1 min-w-[170px] h-10 bg-slate-900/60 text-lg sm:text-xl font-extrabold text-white px-3 rounded-lg border border-transparent hover:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" title={t('raidTitleLabel')} aria-label={t('raidTitleLabel')} />
 
-                        <div className="flex items-center gap-1 h-10 bg-slate-900/60 rounded-lg px-2.5 border border-transparent hover:border-slate-600 transition-colors" title="Filtra os personagens disponíveis por item level">
+                        <div className="flex items-center gap-1 h-10 bg-slate-900/60 rounded-lg px-2.5 border border-transparent hover:border-slate-600 transition-colors" title={t('ilvlRangeTip')}>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">iLvl</span>
-                            <input type="number" value={activeRaid.minIlevel} onChange={(e) => updateActiveRaid(r => ({ ...r, minIlevel: e.target.value }))} placeholder="mín" aria-label="iLvl mínimo" className="w-14 bg-transparent text-sm font-bold text-white text-center focus:outline-none placeholder:text-slate-600 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+                            <input type="number" value={activeRaid.minIlevel} onChange={(e) => updateActiveRaid(r => ({ ...r, minIlevel: e.target.value }))} placeholder={t('minPh')} aria-label={t('ilvlMinAria')} className="w-14 bg-transparent text-sm font-bold text-white text-center focus:outline-none placeholder:text-slate-600 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                             <span className="text-slate-600">–</span>
-                            <input type="number" value={activeRaid.maxIlevel} onChange={(e) => updateActiveRaid(r => ({ ...r, maxIlevel: e.target.value }))} placeholder="máx" aria-label="iLvl máximo" className="w-14 bg-transparent text-sm font-bold text-white text-center focus:outline-none placeholder:text-slate-600 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+                            <input type="number" value={activeRaid.maxIlevel} onChange={(e) => updateActiveRaid(r => ({ ...r, maxIlevel: e.target.value }))} placeholder={t('maxPh')} aria-label={t('ilvlMaxAria')} className="w-14 bg-transparent text-sm font-bold text-white text-center focus:outline-none placeholder:text-slate-600 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                         </div>
 
-                        <div className="flex h-10 items-center rounded-lg bg-slate-900/60 p-1 border border-slate-700/60" role="group" aria-label="Tamanho do grupo">
-                            <button onClick={() => setRaidLayout(4)} aria-pressed={activeRaid.mode === 4} className={`h-8 px-3 rounded-md text-sm font-bold flex items-center gap-1.5 transition-all ${activeRaid.mode === 4 ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`} title="Modo 4 jogadores (Abyssal): cada grupo é uma PT independente">4 <Icons.Users size={14} /></button>
-                            <button onClick={() => setRaidLayout(8)} aria-pressed={activeRaid.mode !== 4} className={`h-8 px-3 rounded-md text-sm font-bold flex items-center gap-1.5 transition-all ${activeRaid.mode !== 4 ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`} title="Modo 8 jogadores (Legion): os grupos formam lobbies de 8">8 <Icons.Users size={14} /></button>
+                        <div className="flex h-10 items-center rounded-lg bg-slate-900/60 p-1 border border-slate-700/60" role="group" aria-label={t('groupSizeAria')}>
+                            <button onClick={() => setRaidLayout(4)} aria-pressed={activeRaid.mode === 4} className={`h-8 px-3 rounded-md text-sm font-bold flex items-center gap-1.5 transition-all ${activeRaid.mode === 4 ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`} title={t('mode4Tip')}>4 <Icons.Users size={14} /></button>
+                            <button onClick={() => setRaidLayout(8)} aria-pressed={activeRaid.mode !== 4} className={`h-8 px-3 rounded-md text-sm font-bold flex items-center gap-1.5 transition-all ${activeRaid.mode !== 4 ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`} title={t('mode8Tip')}>8 <Icons.Users size={14} /></button>
                         </div>
 
-                        <button onClick={addGroup} className="h-10 px-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-lg flex items-center gap-1.5 shadow transition-all" title="Adicionar um grupo extra"><Icons.Plus size={16} /> Grupo Extra</button>
+                        <button onClick={addGroup} className="h-10 px-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-lg flex items-center gap-1.5 shadow transition-all" title={t('addGroupTip')}><Icons.Plus size={16} /> {t('addGroup')}</button>
 
-                        <button onClick={deleteCurrentRaid} className="h-10 w-10 bg-red-900/30 text-red-400 hover:bg-red-900/60 hover:text-red-300 rounded-lg transition-all flex items-center justify-center border border-red-800/40" title="Excluir esta aba de raid" aria-label="Excluir raid"><Icons.Trash2 size={16} /></button>
+                        <button onClick={deleteCurrentRaid} className="h-10 w-10 bg-red-900/30 text-red-400 hover:bg-red-900/60 hover:text-red-300 rounded-lg transition-all flex items-center justify-center border border-red-800/40" title={t('deleteRaidTip')} aria-label={t('deleteRaidAria')}><Icons.Trash2 size={16} /></button>
                     </div>
 
                     {/* Main Board: painel lateral de personagens + área das PTs */}
@@ -1103,26 +1310,26 @@
                         {/* Painel lateral: Personagens Disponíveis (fixo ao rolar no desktop; recolhível no celular) */}
                         <aside className="w-full lg:w-[290px] lg:flex-shrink-0 lg:sticky lg:top-4 z-10">
                             <button onClick={() => setPanelOpen(o => !o)} className="lg:hidden w-full mb-2 px-4 py-2.5 rounded-lg font-bold bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-between">
-                                <span>👥 Personagens disponíveis</span>
+                                <span>{t('panelToggle')}</span>
                                 <span>{panelOpen ? '▲' : '▼'}</span>
                             </button>
                             <div className={`${panelOpen ? 'block' : 'hidden'} lg:block max-h-[60vh] lg:max-h-[calc(100vh-2rem)] overflow-y-auto pr-1 scrollbar-thin`}>
                                 <div className="flex flex-wrap gap-2 items-center mb-3">
-                                    <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Buscar roster ou classe..." className={`${filterFieldCls} w-full`} />
-                                    <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className={`${filterFieldCls} flex-1 min-w-0`} title="Filtrar por função">
-                                        <option value="Todos">Todas as funções</option>
-                                        <option value="DPS">DPS</option>
-                                        <option value="Suporte">Suporte</option>
+                                    <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('searchPh')} className={`${filterFieldCls} w-full`} />
+                                    <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className={`${filterFieldCls} flex-1 min-w-0`} title={t('roleFilterTip')}>
+                                        <option value="Todos">{t('roleAll')}</option>
+                                        <option value="DPS">{roleLabel('DPS')}</option>
+                                        <option value="Suporte">{roleLabel('Suporte')}</option>
                                     </select>
-                                    <select value={classFilter} onChange={(e) => setClassFilter(e.target.value)} className={`${filterFieldCls} flex-1 min-w-0`} title="Filtrar por classe">
-                                        <option value="Todas">Todas as classes</option>
+                                    <select value={classFilter} onChange={(e) => setClassFilter(e.target.value)} className={`${filterFieldCls} flex-1 min-w-0`} title={t('classFilterTip')}>
+                                        <option value="Todas">{t('classAll')}</option>
                                         {classOptions.map(cl => <option key={cl} value={cl}>{cl}</option>)}
                                     </select>
                                     {hasGarageFilter && (
-                                        <button onClick={() => { setSearch(''); setRoleFilter('Todos'); setClassFilter('Todas'); }} className="w-full px-3 py-2 rounded-lg text-sm font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all whitespace-nowrap">✕ Limpar filtros</button>
+                                        <button onClick={() => { setSearch(''); setRoleFilter('Todos'); setClassFilter('Todas'); }} className="w-full px-3 py-2 rounded-lg text-sm font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all whitespace-nowrap">{t('clearFilters')}</button>
                                     )}
                                 </div>
-                                <DropZone locationId="garage" title="Personagens Disponíveis" isParty={false} sidebar={true} onAddClick={() => openEditModal()} />
+                                <DropZone locationId="garage" title={t('availableTitle')} isParty={false} sidebar={true} onAddClick={() => openEditModal()} />
                             </div>
                         </aside>
 
@@ -1137,7 +1344,7 @@
                             <div className="relative flex justify-center">
                                 <span className="bg-slate-900 px-6 py-2 text-xs font-black tracking-widest text-indigo-400 uppercase flex items-center gap-2.5 border border-slate-700/60 rounded-full shadow-lg backdrop-blur-sm">
                                     <Icons.Sword size={13} strokeWidth="2.5" className="text-indigo-400 animate-pulse" /> 
-                                    MONTAGEM DOS GRUPOS DA RAID 
+                                    {t('builderTitle')}
                                     <Icons.Sword size={13} strokeWidth="2.5" className="text-indigo-400 animate-pulse" />
                                 </span>
                             </div>
@@ -1151,8 +1358,8 @@
                     </div>
 
                     <footer className="max-w-[1700px] mx-auto text-center text-[11px] text-slate-500 pb-6 px-4">
-                        Reset semanal: toda quarta-feira às 04:00 (horário de Brasília). Seus dados ficam salvos apenas neste navegador — use Exportar para fazer backup ou Compartilhar para enviar uma raid por link.
-                        <br />Projeto de fã, sem afiliação com Smilegate RPG ou Amazon Games. Lost Ark é marca de seus respectivos donos.
+                        {t('footer1')}
+                        <br />{t('footer2')}
                     </footer>
 
                     {/* Modal */}
@@ -1160,52 +1367,52 @@
                         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
                             <div className="bg-slate-800 p-6 rounded-2xl border border-slate-600 shadow-2xl w-full max-w-lg">
                                 <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-xl font-bold text-white">{characters.find(c => c.id === editingChar.id) ? 'Editar Personagem' : 'Novo Personagem'}</h3>
+                                    <h3 className="text-xl font-bold text-white">{characters.find(c => c.id === editingChar.id) ? t('editChar') : t('newChar')}</h3>
                                     <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white"><Icons.X size={24} /></button>
                                 </div>
                                 <div className="space-y-4">
                                     <div className="flex gap-4">
                                         <div className="flex-1">
                                             <label className="block text-sm font-bold text-slate-400 mb-1">Roster</label>
-                                            <input type="text" value={editingChar.roster} onChange={e => { const r = e.target.value; setEditingChar({ ...editingChar, roster: r, tempColor: rosterColors[r] || editingChar.tempColor }); }} placeholder="Ex: Koij" className="w-full bg-slate-900 p-3 rounded-lg border border-slate-600 text-white focus:border-indigo-500 outline-none" />
+                                            <input type="text" value={editingChar.roster} onChange={e => { const r = e.target.value; setEditingChar({ ...editingChar, roster: r, tempColor: rosterColors[r] || editingChar.tempColor }); }} placeholder={t('rosterPh')} className="w-full bg-slate-900 p-3 rounded-lg border border-slate-600 text-white focus:border-indigo-500 outline-none" />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-bold text-slate-400 mb-1">Cor</label>
+                                            <label className="block text-sm font-bold text-slate-400 mb-1">{t('lblColor')}</label>
                                             <div className="w-12 h-12 rounded-lg overflow-hidden border-2 border-slate-600 cursor-pointer">
                                                 <input type="color" value={editingChar.tempColor} onChange={e => setEditingChar({ ...editingChar, tempColor: e.target.value })} className="w-16 h-16 -mt-2 -ml-2 cursor-pointer" />
                                             </div>
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-bold text-slate-400 mb-1">Classe</label>
+                                        <label className="block text-sm font-bold text-slate-400 mb-1">{t('lblClass')}</label>
                                         <select value={editingChar.charClass} onChange={e => setEditingChar({ ...editingChar, charClass: e.target.value })} className="w-full bg-slate-900 p-3 rounded-lg border border-slate-600 text-white focus:border-indigo-500 outline-none">
                                             {LA_CLASSES.map(cls => <option key={cls} value={cls}>{CLASS_ICONS[cls]} {cls}</option>)}
                                         </select>
                                     </div>
                                     <div className="flex gap-4">
                                         <div className="w-1/4">
-                                            <label className="block text-sm font-bold text-slate-400 mb-1">Item Level</label>
+                                            <label className="block text-sm font-bold text-slate-400 mb-1">{t('lblItemLevel')}</label>
                                             <input type="number" value={editingChar.ilvl} onChange={e => setEditingChar({ ...editingChar, ilvl: e.target.value })} className="w-full bg-slate-900 p-3 rounded-lg border border-slate-600 text-white focus:border-indigo-500 outline-none" />
                                         </div>
                                         <div className="flex-1">
-                                            <label className="block text-sm font-bold text-slate-400 mb-1">Função Principal</label>
+                                            <label className="block text-sm font-bold text-slate-400 mb-1">{t('lblPrimaryRole')}</label>
                                             <select value={editingChar.primaryRole} onChange={e => setEditingChar({ ...editingChar, primaryRole: e.target.value })} className="w-full bg-slate-900 p-3 rounded-lg border border-slate-600 text-white focus:border-indigo-500 outline-none">
-                                                {PRIMARY_ROLES.map(role => <option key={role} value={role}>{role}</option>)}
+                                                {PRIMARY_ROLES.map(role => <option key={role} value={role}>{roleLabel(role)}</option>)}
                                             </select>
                                         </div>
                                         <div className="flex-1">
-                                            <label className="block text-sm font-bold text-slate-400 mb-1">Sinergia</label>
+                                            <label className="block text-sm font-bold text-slate-400 mb-1">{t('lblSynergy')}</label>
                                             <select value={editingChar.secondaryRole} onChange={e => setEditingChar({ ...editingChar, secondaryRole: e.target.value })} className="w-full bg-slate-900 p-3 rounded-lg border border-slate-600 text-white focus:border-indigo-500 outline-none">
-                                                {SYNERGIES.map(role => <option key={role} value={role}>{role}</option>)}
+                                                {SYNERGIES.map(role => <option key={role} value={role}>{roleLabel(role)}</option>)}
                                             </select>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="flex justify-between items-center mt-8 pt-4 border-t border-slate-700">
-                                    <button onClick={() => deleteCharacter(editingChar.id)} className="text-red-400 hover:text-red-300 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-red-400/10 transition-colors" title="Excluir personagem de TODAS as raides"><Icons.Trash2 size={18} /> Excluir do Roster</button>
+                                    <button onClick={() => deleteCharacter(editingChar.id)} className="text-red-400 hover:text-red-300 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-red-400/10 transition-colors" title={t('deleteFromRosterTip')}><Icons.Trash2 size={18} /> {t('deleteFromRoster')}</button>
                                     <div className="flex gap-3">
-                                        <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-300 hover:text-white transition-colors">Cancelar</button>
-                                        <button onClick={saveCharacter} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow-lg transition-colors">Salvar</button>
+                                        <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-300 hover:text-white transition-colors">{t('cancel')}</button>
+                                        <button onClick={saveCharacter} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow-lg transition-colors">{t('save')}</button>
                                     </div>
                                 </div>
                             </div>
@@ -1220,7 +1427,7 @@
                                     <Icons.ShieldAlert size={48} />
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-4">{alertDialog.message}</h3>
-                                <button onClick={() => setAlertDialog({ isOpen: false, message: '' })} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg transition-colors w-full">Entendido</button>
+                                <button onClick={() => setAlertDialog({ isOpen: false, message: '' })} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg transition-colors w-full">{t('ok')}</button>
                             </div>
                         </div>
                     )}
@@ -1231,8 +1438,8 @@
                             <div className="bg-slate-800 p-6 rounded-2xl border border-slate-600 shadow-2xl w-full max-w-md text-center">
                                 <h3 className="text-xl font-bold text-white mb-6">{confirmDialog.message}</h3>
                                 <div className="flex gap-4 justify-center">
-                                    <button onClick={() => setConfirmDialog({ isOpen: false, message: '', onConfirm: null })} className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg transition-colors flex-1">Cancelar</button>
-                                    <button onClick={() => { confirmDialog.onConfirm(); setConfirmDialog({ isOpen: false, message: '', onConfirm: null }); }} className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-colors flex-1">Confirmar</button>
+                                    <button onClick={() => setConfirmDialog({ isOpen: false, message: '', onConfirm: null })} className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg transition-colors flex-1">{t('cancel')}</button>
+                                    <button onClick={() => { confirmDialog.onConfirm(); setConfirmDialog({ isOpen: false, message: '', onConfirm: null }); }} className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-colors flex-1">{t('confirm')}</button>
                                 </div>
                             </div>
                         </div>
