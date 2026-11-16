@@ -1074,34 +1074,27 @@
 
                     </div>
 
-                    {/* Header Principal da Raid Ativa */}
-                    <div className="max-w-[1700px] mx-auto mb-8 bg-slate-800 p-6 rounded-b-2xl rounded-tr-2xl shadow-lg border border-slate-700 flex flex-col md:flex-row items-end gap-4 relative">
-                        <div className="flex flex-1 gap-3 w-full flex-col sm:flex-row">
-                            <div className="w-full sm:w-16">
-                                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1 tracking-wider text-center">Ícone</label>
-                                <input type="text" value={activeRaid.emoji} onChange={(e) => updateActiveRaid(r => ({ ...r, emoji: e.target.value }))} className="w-full bg-slate-900 text-2xl text-center p-2 rounded-lg border border-transparent hover:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" title="Cole um Emoji aqui" />
-                            </div>
-                            <div className="flex-1">
-                                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1 tracking-wider">Título da Raid</label>
-                                <input type="text" value={activeRaid.title} onChange={(e) => updateActiveRaid(r => ({ ...r, title: e.target.value }))} className="w-full bg-slate-900 text-2xl font-black text-white p-2 rounded-lg border border-transparent hover:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
-                            </div>
-                            <div className="flex gap-2 justify-between">
-                                <div className="w-24">
-                                    <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1 tracking-wider text-center text-ellipsis overflow-hidden whitespace-nowrap" title="Personagens abaixo desse iLvl não aparecerão na garagem">iLvl Mín</label>
-                                    <input type="number" value={activeRaid.minIlevel} onChange={(e) => updateActiveRaid(r => ({ ...r, minIlevel: e.target.value }))} placeholder="1620" className="w-full bg-slate-900 text-lg font-bold text-white text-center p-2 rounded-lg border border-transparent hover:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors placeholder:text-slate-600" />
-                                </div>
-                                <div className="w-24">
-                                    <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1 tracking-wider text-center text-ellipsis overflow-hidden whitespace-nowrap" title="Personagens acima desse iLvl não aparecerão na garagem">iLvl Máx</label>
-                                    <input type="number" value={activeRaid.maxIlevel} onChange={(e) => updateActiveRaid(r => ({ ...r, maxIlevel: e.target.value }))} placeholder="1639" className="w-full bg-slate-900 text-lg font-bold text-white text-center p-2 rounded-lg border border-transparent hover:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors placeholder:text-slate-600" />
-                                </div>
-                            </div>
+                    {/* Barra compacta da Raid Ativa */}
+                    <div className="max-w-[1700px] mx-auto mb-5 bg-slate-800 p-3 rounded-b-xl rounded-tr-xl shadow-lg border border-slate-700 flex flex-wrap items-center gap-2 sm:gap-3">
+                        <input type="text" value={activeRaid.emoji} onChange={(e) => updateActiveRaid(r => ({ ...r, emoji: e.target.value }))} className="w-11 h-10 bg-slate-900/60 text-xl text-center rounded-lg border border-transparent hover:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" title="Ícone da raid (cole um emoji)" aria-label="Ícone da raid" />
+
+                        <input type="text" value={activeRaid.title} onChange={(e) => updateActiveRaid(r => ({ ...r, title: e.target.value }))} className="flex-1 min-w-[170px] h-10 bg-slate-900/60 text-lg sm:text-xl font-extrabold text-white px-3 rounded-lg border border-transparent hover:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" title="Título da raid" aria-label="Título da raid" />
+
+                        <div className="flex items-center gap-1 h-10 bg-slate-900/60 rounded-lg px-2.5 border border-transparent hover:border-slate-600 transition-colors" title="Filtra os personagens disponíveis por item level">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">iLvl</span>
+                            <input type="number" value={activeRaid.minIlevel} onChange={(e) => updateActiveRaid(r => ({ ...r, minIlevel: e.target.value }))} placeholder="mín" aria-label="iLvl mínimo" className="w-14 bg-transparent text-sm font-bold text-white text-center focus:outline-none placeholder:text-slate-600 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+                            <span className="text-slate-600">–</span>
+                            <input type="number" value={activeRaid.maxIlevel} onChange={(e) => updateActiveRaid(r => ({ ...r, maxIlevel: e.target.value }))} placeholder="máx" aria-label="iLvl máximo" className="w-14 bg-transparent text-sm font-bold text-white text-center focus:outline-none placeholder:text-slate-600 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                         </div>
-                        <div className="flex gap-2 w-full md:w-auto flex-wrap sm:flex-nowrap">
-                            <button onClick={() => setRaidLayout(4)} className={`flex-1 sm:flex-initial px-5 py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${activeRaid.mode === 4 ? "ring-2 ring-white/70" : ""}`} title="Abyssal (4 pessoas)"><span className="text-xl leading-none">4</span> <Icons.Users size={18} /></button>
-                            <button onClick={() => setRaidLayout(8)} className={`flex-1 sm:flex-initial px-5 py-3 bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 font-bold rounded-lg transition-all flex items-center justify-center gap-2 border border-indigo-700/50 ${activeRaid.mode !== 4 ? "ring-2 ring-white/70" : ""}`} title="Legion / 8 Players (Grupo Duplo Compacto)"><span className="text-xl leading-none">8</span> <Icons.Users size={18} /></button>
-                            <button onClick={addGroup} className="flex-1 sm:flex-initial px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg flex items-center justify-center gap-2 shadow-lg transition-all"><Icons.Plus size={20} /> Grupo Extra</button>
-                            <button onClick={deleteCurrentRaid} className="px-4 py-3 bg-red-900/40 text-red-400 hover:bg-red-900/60 hover:text-red-300 font-bold rounded-lg transition-all flex items-center justify-center gap-2 border border-red-800/50" title="Excluir Aba de Raid Atual"><Icons.Trash2 size={18} /></button>
+
+                        <div className="flex h-10 items-center rounded-lg bg-slate-900/60 p-1 border border-slate-700/60" role="group" aria-label="Tamanho do grupo">
+                            <button onClick={() => setRaidLayout(4)} aria-pressed={activeRaid.mode === 4} className={`h-8 px-3 rounded-md text-sm font-bold flex items-center gap-1.5 transition-all ${activeRaid.mode === 4 ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`} title="Modo 4 jogadores (Abyssal): cada grupo é uma PT independente">4 <Icons.Users size={14} /></button>
+                            <button onClick={() => setRaidLayout(8)} aria-pressed={activeRaid.mode !== 4} className={`h-8 px-3 rounded-md text-sm font-bold flex items-center gap-1.5 transition-all ${activeRaid.mode !== 4 ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`} title="Modo 8 jogadores (Legion): os grupos formam lobbies de 8">8 <Icons.Users size={14} /></button>
                         </div>
+
+                        <button onClick={addGroup} className="h-10 px-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-lg flex items-center gap-1.5 shadow transition-all" title="Adicionar um grupo extra"><Icons.Plus size={16} /> Grupo Extra</button>
+
+                        <button onClick={deleteCurrentRaid} className="h-10 w-10 bg-red-900/30 text-red-400 hover:bg-red-900/60 hover:text-red-300 rounded-lg transition-all flex items-center justify-center border border-red-800/40" title="Excluir esta aba de raid" aria-label="Excluir raid"><Icons.Trash2 size={16} /></button>
                     </div>
 
                     {/* Main Board: painel lateral de personagens + área das PTs */}
