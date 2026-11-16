@@ -3,12 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lost Ark - Raid Organizer</title>
+    <title>LOST ORGANIZER</title>
     <meta name="description" content="Organizador de PTs e Raids de Lost Ark: monte grupos de 4 e 8 jogadores, confira sinergias e controle o reset semanal.">
-    <meta property="og:title" content="Lost Ark - Raid Organizer">
+    <meta property="og:title" content="LOST ORGANIZER">
     <meta property="og:description" content="Monte suas PTs, confira sinergias e controle o reset semanal. Grátis e sem cadastro.">
     <meta property="og:type" content="website">
     <meta name="theme-color" content="#0f172a">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300&display=swap" rel="stylesheet">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚔️</text></svg>">
     
     <!-- Tailwind CSS (Estilos) -->
@@ -756,6 +759,12 @@
             return (
                 <div className="min-h-screen p-6">
                     
+                    <header className="max-w-[1700px] mx-auto text-center pt-4 pb-8 px-4">
+                        <h1 className="text-white uppercase text-4xl sm:text-6xl md:text-7xl tracking-[0.2em] sm:tracking-[0.3em] pl-[0.2em] sm:pl-[0.3em]" style={{ fontFamily: "'Montserrat', ui-sans-serif, system-ui, sans-serif", fontWeight: 200 }}>
+                            LOST ORGANIZER
+                        </h1>
+                    </header>
+
                     {/* TABS DE RAIDS & RESET SEMANAL */}
                     <div className="max-w-[1700px] mx-auto mb-0 flex gap-2 overflow-x-auto pt-2 px-4 scrollbar-thin items-end">
                         {raids.map(raid => (
