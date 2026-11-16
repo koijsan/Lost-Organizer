@@ -288,6 +288,7 @@
             const [roleFilter, setRoleFilter] = useState('Todos');
             const [classFilter, setClassFilter] = useState('Todas');
             const hasGarageFilter = !!search.trim() || roleFilter !== 'Todos' || classFilter !== 'Todas';
+            const [panelOpen, setPanelOpen] = useState(() => window.innerWidth >= 1024); // só afeta telas pequenas
 
             // --- RESET SEMANAL (quarta 04:00 Brasília): contagem regressiva + aviso ---
             const [nowTick, setNowTick] = useState(Date.now());
@@ -717,7 +718,7 @@
             };
 
             // Zona de Soltar Adaptável (Suporta Layout Normal e Layout Horizontal do Topo)
-            const DropZone = ({ locationId, title, isParty, compact = false, onAddClick = null }) => {
+            const DropZone = ({ locationId, title, isParty, compact = false, onAddClick = null, sidebar = false }) => {
                 let charsInZone = characters.filter(c => getCharLocation(c.id) === locationId);
                 const groupObj = isParty ? activeRaid.groups.find(g => g.id === locationId) : null;
                 const isCompleted = groupObj?.completed;
@@ -754,9 +755,9 @@
                          ${isCompleted ? 'opacity-50 grayscale-[0.5] border-green-950 bg-slate-850/50' : ''}`}
                          onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, locationId)}>
                         
-                        <div className={`flex justify-between items-start mb-4 border-b pb-2 ${isCompleted ? 'border-green-900/40' : 'border-slate-700/60'}`}>
+                        <div className={`flex ${sidebar ? 'flex-col gap-3' : 'justify-between items-start'} mb-4 border-b pb-2 ${isCompleted ? 'border-green-900/40' : 'border-slate-700/60'}`}>
                             <div className="flex flex-col">
-                                <h2 className={`text-sm font-extrabold flex items-center gap-2 ${isCompleted ? 'text-slate-400 line-through' : 'text-slate-200'}`}>
+                                <h2 className={`text-sm font-extrabold flex flex-wrap items-center gap-2 ${isCompleted ? 'text-slate-400 line-through' : 'text-slate-200'}`}>
                                     {isParty ? (
                                         <Icons.Users size={16} className={isCompleted ? "text-slate-500" : "text-indigo-400"}/>
                                     ) : (
@@ -793,7 +794,7 @@
                                     </div>
                                 )}
                             </div>
-                            <div className="flex items-center gap-1.5">
+                            <div className={`flex items-center gap-1.5 ${sidebar ? 'w-full' : ''}`}>
                                 {isParty ? (
                                     <>
                                         <button 
@@ -809,7 +810,7 @@
                                 ) : onAddClick ? (
                                     <button 
                                         onClick={onAddClick} 
-                                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 hover:border-indigo-400 text-white text-xs font-extrabold rounded-lg transition-all flex items-center gap-1.5 shadow-md border border-indigo-600 active:scale-95" 
+                                        className={`px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 hover:border-indigo-400 text-white text-xs font-extrabold rounded-lg transition-all flex items-center gap-1.5 shadow-md border border-indigo-600 active:scale-95 ${sidebar ? 'w-full justify-center' : ''}`} 
                                         title="Criar Novo Personagem"
                                     >
                                         <Icons.Plus size={12} strokeWidth="3" />
@@ -828,13 +829,13 @@
                         {/* Layout de Exibição Condicional (Coluna se for Party, Grade Horizontal Ampla se for Garagem) */}
                         <div className={isParty 
                             ? "flex-1 flex flex-col gap-2" 
-                            : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin"
+                            : (sidebar ? "flex flex-col gap-2" : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin")
                         }>
                             {charsInZone.length === 0 ? (
                                 <div className={`flex items-center justify-center text-slate-500 border-2 border-dashed border-slate-700/60 rounded-lg p-6 text-center text-xs ${isParty ? 'flex-1 min-h-[120px]' : 'col-span-full py-12 bg-slate-900/10'}`}>
-                                    {(!isParty && (activeRaid.minIlevel || activeRaid.maxIlevel || hasGarageFilter)) ? "Nenhum personagem correspondente aos filtros" : "Sem personagens na garagem. Clique em 'Criar Personagem' para adicionar."}
+                                    {(!isParty && (activeRaid.minIlevel || activeRaid.maxIlevel || hasGarageFilter)) ? "Nenhum personagem correspondente aos filtros" : "Sem personagens disponíveis. Clique em 'Criar Personagem' para adicionar."}
                                 </div>
-                            ) : charsInZone.map(char => <CharacterCard key={char.id} char={char} isDisabled={isCompleted} compact={compact} />)}
+                            ) : charsInZone.map(char => <CharacterCard key={char.id} char={char} isDisabled={isCompleted} compact={compact || sidebar} />)}
                         </div>
                     </div>
                 );
@@ -1081,31 +1082,40 @@
                         </div>
                     </div>
 
-                    {/* Main Board */}
-                    <div className="max-w-[1700px] mx-auto pb-12 flex flex-col gap-6">
-                        
-                        {/* Garagem de Personagens no TOPO da tela com largura total */}
-                        <div className="w-full z-10">
-                            <div className="flex flex-wrap gap-2 items-center mb-3">
-                                <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Buscar por roster ou classe..." className={`${filterFieldCls} flex-1 min-w-[200px]`} />
-                                <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className={filterFieldCls} title="Filtrar por função">
-                                    <option value="Todos">Todas as funções</option>
-                                    <option value="DPS">DPS</option>
-                                    <option value="Suporte">Suporte</option>
-                                </select>
-                                <select value={classFilter} onChange={(e) => setClassFilter(e.target.value)} className={filterFieldCls} title="Filtrar por classe">
-                                    <option value="Todas">Todas as classes</option>
-                                    {classOptions.map(cl => <option key={cl} value={cl}>{cl}</option>)}
-                                </select>
-                                {hasGarageFilter && (
-                                    <button onClick={() => { setSearch(''); setRoleFilter('Todos'); setClassFilter('Todas'); }} className="px-3 py-2 rounded-lg text-sm font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all whitespace-nowrap">✕ Limpar</button>
-                                )}
+                    {/* Main Board: painel lateral de personagens + área das PTs */}
+                    <div className="max-w-[1700px] mx-auto pb-12 flex flex-col lg:flex-row gap-6 items-start">
+
+                        {/* Painel lateral: Personagens Disponíveis (fixo ao rolar no desktop; recolhível no celular) */}
+                        <aside className="w-full lg:w-[290px] lg:flex-shrink-0 lg:sticky lg:top-4 z-10">
+                            <button onClick={() => setPanelOpen(o => !o)} className="lg:hidden w-full mb-2 px-4 py-2.5 rounded-lg font-bold bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-between">
+                                <span>👥 Personagens disponíveis</span>
+                                <span>{panelOpen ? '▲' : '▼'}</span>
+                            </button>
+                            <div className={`${panelOpen ? 'block' : 'hidden'} lg:block max-h-[60vh] lg:max-h-[calc(100vh-2rem)] overflow-y-auto pr-1 scrollbar-thin`}>
+                                <div className="flex flex-wrap gap-2 items-center mb-3">
+                                    <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Buscar roster ou classe..." className={`${filterFieldCls} w-full`} />
+                                    <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className={`${filterFieldCls} flex-1 min-w-0`} title="Filtrar por função">
+                                        <option value="Todos">Todas as funções</option>
+                                        <option value="DPS">DPS</option>
+                                        <option value="Suporte">Suporte</option>
+                                    </select>
+                                    <select value={classFilter} onChange={(e) => setClassFilter(e.target.value)} className={`${filterFieldCls} flex-1 min-w-0`} title="Filtrar por classe">
+                                        <option value="Todas">Todas as classes</option>
+                                        {classOptions.map(cl => <option key={cl} value={cl}>{cl}</option>)}
+                                    </select>
+                                    {hasGarageFilter && (
+                                        <button onClick={() => { setSearch(''); setRoleFilter('Todos'); setClassFilter('Todas'); }} className="w-full px-3 py-2 rounded-lg text-sm font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all whitespace-nowrap">✕ Limpar filtros</button>
+                                    )}
+                                </div>
+                                <DropZone locationId="garage" title="Personagens Disponíveis" isParty={false} sidebar={true} onAddClick={() => openEditModal()} />
                             </div>
-                            <DropZone locationId="garage" title="Personagens Disponíveis (Garagem)" isParty={false} onAddClick={() => openEditModal()} />
-                        </div>
-                        
+                        </aside>
+
+                        {/* Área das PTs */}
+                        <div className="flex-1 min-w-0 w-full flex flex-col gap-6">
+
                         {/* Divisor Visual de Alta Definição */}
-                        <div className="relative my-6">
+                        <div className="relative">
                             <div className="absolute inset-0 flex items-center" aria-hidden="true">
                                 <div className="w-full border-t-2 border-slate-800/80"></div>
                             </div>
@@ -1119,8 +1129,9 @@
                         </div>
                         
                         {/* Tabuleiro Principal de Raids (Grid Flexível para as PTs e Lobbies de 8) */}
-                        <div className={activeRaid.mode === 4 ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 justify-items-center w-full" : "grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-8 justify-items-center xl:justify-items-start w-full"}>
+                        <div className={activeRaid.mode === 4 ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 min-[1760px]:grid-cols-4 gap-6 justify-items-center w-full" : "grid grid-cols-1 min-[1760px]:grid-cols-2 gap-6 justify-items-center min-[1760px]:justify-items-start w-full"}>
                             {renderRaidLayout()}
+                        </div>
                         </div>
                     </div>
 
