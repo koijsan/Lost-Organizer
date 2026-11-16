@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lost Ark - Raid Organizer</title>
+    <meta name="description" content="Organizador de PTs e Raids de Lost Ark: monte grupos de 4 e 8 jogadores, confira sinergias e controle o reset semanal.">
+    <meta property="og:title" content="Lost Ark - Raid Organizer">
+    <meta property="og:description" content="Monte suas PTs, confira sinergias e controle o reset semanal. Grátis e sem cadastro.">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚔️</text></svg>">
+    
+    <!-- Tailwind CSS (Estilos) -->
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- Babel (Para compilar JSX direto no navegador) -->
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.26.4/babel.min.js"></script>
+
+    <!-- Estilos de Scrollbar Personalizados Premium -->
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.3);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.35);
+            border-radius: 8px;
+            transition: background 0.2s ease;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.6);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-200 font-sans selection:bg-indigo-500/30">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- ÍCONES INLINE ---
+        const Icon = ({ path, size = 16, className = "", title = "", fill = "none", strokeWidth = "2" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {title && <title>{title}</title>}
+                {path}
+            </svg>
+        );
+
+        const Icons = {
+            Sword: (p) => <Icon {...p} path={<><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/></>} />,
+            Plus: (p) => <Icon {...p} strokeWidth="3" path={<><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>} />,
+            Zap: (p) => <Icon {...p} fill="currentColor" path={<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>} />,
+            Flame: (p) => <Icon {...p} path={<path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z"/>} />,
+            ShieldAlert: (p) => <Icon {...p} path={<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>} />,
+            Shield: (p) => <Icon {...p} path={<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>} />,
+            Crosshair: (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></>} />,
+            Edit2: (p) => <Icon {...p} path={<><path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></>} />,
+            X: (p) => <Icon {...p} path={<><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>} />,
+            Trash2: (p) => <Icon {...p} path={<><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></>} />,
+            Users: (p) => <Icon {...p} path={<><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></>} />,
+            GripHorizontal: (p) => <Icon {...p} path={<><circle cx="12" cy="9" r="1"/><circle cx="19" cy="9" r="1"/><circle cx="5" cy="9" r="1"/><circle cx="12" cy="15" r="1"/><circle cx="19" cy="15" r="1"/><circle cx="5" cy="15" r="1"/></>} />,
+            CheckCircle: (p) => <Icon {...p} path={<><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>} />,
+            RefreshCw: (p) => <Icon {...p} path={<><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></>} />,
+            Filter: (p) => <Icon {...p} path={<><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></>} />
+        };
+
+        // --- CONSTANTES ---
+        const LA_CLASSES = [
+            'Aeromancer', 'Arcanist', 'Artist', 'Artillerist', 'Bard', 'Berserker', 'Breaker',
+            'Deadeye', 'Deathblade', 'Destroyer', 'Glaivier', 'Gunlancer', 'Gunslinger',
+            'Machinist', 'Paladin', 'Reaper', 'Scrapper', 'Shadowhunter', 'Sharpshooter',
+            'Slayer', 'Sorceress', 'Souleater', 'Soulfist', 'Striker', 'Summoner', 'Wardancer', 'Wildsoul',
+            'Valkyrie', 'Guardianknight'
+        ].sort();
+
+        const PRIMARY_ROLES = ['DPS', 'Suporte'];
+        const SYNERGIES = ['Nenhuma', 'Crítico', 'Dano Crítico', 'Armadura', 'Posicional', 'Dano', 'Defesa'];
+
+        const CLASS_ICONS = {
+            'Aeromancer': '☂️', 'Arcanist': '🃏', 'Artist': '🖌️', 'Artillerist': '🚀', 'Bard': '🎵',
+            'Berserker': '🩸', 'Breaker': '🥊', 'Deadeye': '🔫', 'Deathblade': '⚔️', 'Destroyer': '🔨',
+            'Glaivier': '🔱', 'Gunlancer': '🛡️', 'Gunslinger': '🎯', 'Machinist': '🤖', 'Paladin': '✨',
+            'Reaper': '🌑', 'Scrapper': '🤜', 'Shadowhunter': '😈', 'Sharpshooter': '🏹', 'Slayer': '🗡️',
+            'Sorceress': '🔮', 'Souleater': '👻', 'Soulfist': '☄️', 'Striker': '🐅', 'Summoner': '🧚',
+            'Wardancer': '🌪️', 'Wildsoul': '🐺', 'Valkyrie': '👼', 'Guardianknight': '🏰'
+        };
+
+        // --- PROTEÇÃO: dados corrompidos no navegador não podem quebrar o app ---
+        try {
+            ['la_global_chars', 'la_colors', 'la_raids', 'la_chars', 'la_groups'].forEach(k => {
+                try { JSON.parse(localStorage.getItem(k)); } catch { localStorage.removeItem(k); }
+            });
+        } catch (e) { /* localStorage indisponível */ }
+
+        // --- COMPONENTE PRINCIPAL ---
+        function App() {
+            // 1. ROSTER GLOBAL (Personagens são compartilhados entre todas as Raids)
+            const [characters, setCharacters] = useState(() => {
+                const saved = localStorage.getItem('la_global_chars');
+                if (saved) return JSON.parse(saved);
+                
+                const oldChars = localStorage.getItem('la_chars');
+                if (oldChars) {
+                    return JSON.parse(oldChars).map(c => {
+                        const { location, ...rest } = c;
+                        return rest;
+                    });
+                }
+                return [];
+            });
+            
+            const [rosterColors, setRosterColors] = useState(() => {
+                const saved = localStorage.getItem('la_colors');
+                return saved ? JSON.parse(saved) : {};
+            });
+
+            // 2. SISTEMA DE MÚLTIPLAS RAIDS
+            const [raids, setRaids] = useState(() => {
+                const saved = localStorage.getItem('la_raids');
+                if (saved) {
+                    return JSON.parse(saved).map(r => ({
+                        ...r,
+                        minIlevel: r.minIlevel || '',
+                        maxIlevel: r.maxIlevel || '',
+                        groups: r.groups.map(g => ({ ...g, completed: !!g.completed }))
+                    }));
+                }
+
+                const oldChars = localStorage.getItem('la_chars');
+                if (oldChars) {
+                    const parsedChars = JSON.parse(oldChars);
+                    const assignments = {};
+                    parsedChars.forEach(c => { if (c.location && c.location !== 'garage') assignments[c.id] = c.location; });
+                    
+                    return [{
+                        id: 'default_raid',
+                        title: localStorage.getItem('la_title') || 'Minha Primeira Raid',
+                        emoji: localStorage.getItem('la_emoji') || '🐉',
+                        minIlevel: '',
+                        maxIlevel: '',
+                        groups: (JSON.parse(localStorage.getItem('la_groups')) || [{ id: 'party1', title: 'Grupo 1' }, { id: 'party2', title: 'Grupo 2' }]).map(g => ({...g, completed: false})),
+                        assignments: assignments
+                    }];
+                }
+                
+                return [{
+                    id: Date.now().toString(), title: 'Nova Raid', emoji: '⚔️', minIlevel: '', maxIlevel: '',
+                    groups: [{ id: 'party1', title: 'Grupo 1', completed: false }, { id: 'party2', title: 'Grupo 2', completed: false }], assignments: {}
+                }];
+            });
+
+            const [activeRaidId, setActiveRaidId] = useState(() => localStorage.getItem('la_active_raid') || raids[0]?.id);
+            const activeRaid = raids.find(r => r.id === activeRaidId) || raids[0];
+
+            // Estados UI Temporários
+            const [isModalOpen, setIsModalOpen] = useState(false);
+            const [editingChar, setEditingChar] = useState(null);
+            const [dragOverCharId, setDragOverCharId] = useState(null);
+            
+            // Novos Estados para os Modais Customizados
+            const [alertDialog, setAlertDialog] = useState({ isOpen: false, message: '' });
+            const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, message: '', onConfirm: null });
+
+            const showAlert = (message) => setAlertDialog({ isOpen: true, message });
+            const showConfirm = (message, onConfirmCallback) => setConfirmDialog({ isOpen: true, message, onConfirm: onConfirmCallback });
+
+            // --- AUTO-SAVE ---
+            useEffect(() => { localStorage.setItem('la_global_chars', JSON.stringify(characters)); }, [characters]);
+            useEffect(() => { localStorage.setItem('la_colors', JSON.stringify(rosterColors)); }, [rosterColors]);
+            useEffect(() => { localStorage.setItem('la_raids', JSON.stringify(raids)); }, [raids]);
+            useEffect(() => { localStorage.setItem('la_active_raid', activeRaidId); }, [activeRaidId]);
+
+            // --- HELPERS ---
+            const updateActiveRaid = (updater) => {
+                setRaids(prev => prev.map(r => r.id === activeRaidId ? updater(r) : r));
+            };
+
+            const getCharLocation = (charId) => activeRaid.assignments[charId] || 'garage';
+
+            // --- LÓGICA DE ABAS (TABS) ---
+            const createNewRaid = () => {
+                const newRaid = {
+                    id: Date.now().toString(),
+                    title: `Nova Raid ${raids.length + 1}`,
+                    emoji: '📝',
+                    minIlevel: '',
+                    maxIlevel: '',
+                    groups: [{ id: 'party1', title: 'Grupo 1', completed: false }, { id: 'party2', title: 'Grupo 2', completed: false }],
+                    assignments: {}
+                };
+                setRaids([...raids, newRaid]);
+                setActiveRaidId(newRaid.id);
+            };
+
+            const deleteCurrentRaid = () => {
+                if (raids.length === 1) return showAlert("Você precisa ter pelo menos uma raid configurada!");
+                showConfirm(`Tem certeza que deseja excluir a aba "${activeRaid.title}"? Seus personagens não serão deletados.`, () => {
+                    const newRaids = raids.filter(r => r.id !== activeRaidId);
+                    setRaids(newRaids);
+                    setActiveRaidId(newRaids[0].id);
+                });
+            };
+
+            // --- RESET SEMANAL ---
+            const resetAllWeekly = () => {
+                showConfirm("Deseja desmarcar TODAS as PTs concluídas em TODAS as Raides? Isso irá resetar a semana.", () => {
+                    setRaids(prev => prev.map(r => ({
+                        ...r,
+                        groups: r.groups.map(g => ({ ...g, completed: false }))
+                    })));
+                });
+            };
+
+            // --- BACKUP: EXPORTAR / IMPORTAR ---
+            const exportData = () => {
+                const data = { app: 'lostark-raid-organizer', version: 1, characters, rosterColors, raids, activeRaidId };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `lostark-organizer-${new Date().toISOString().slice(0, 10)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            const importData = (e) => {
+                const file = e.target.files[0];
+                e.target.value = '';
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                    try {
+                        const d = JSON.parse(reader.result);
+                        if (!Array.isArray(d.characters) || !Array.isArray(d.raids) || d.raids.length === 0) throw new Error('invalid');
+                        showConfirm('Importar este backup vai substituir TODOS os seus dados atuais. Continuar?', () => {
+                            setCharacters(d.characters);
+                            setRosterColors(d.rosterColors || {});
+                            setRaids(d.raids.map(r => ({
+                                minIlevel: '', maxIlevel: '', assignments: {}, ...r,
+                                groups: (r.groups || []).map(g => ({ ...g, completed: !!g.completed }))
+                            })));
+                            setActiveRaidId(d.raids[0].id);
+                        });
+                    } catch {
+                        showAlert('Arquivo inválido. Use um backup exportado por este organizador.');
+                    }
+                };
+                reader.readAsText(file);
+            };
+
+            // --- CONCLUIR GRUPO ---
+            const toggleGroupCompletion = (groupId) => {
+                updateActiveRaid(raid => ({
+                    ...raid,
+                    groups: raid.groups.map(g => g.id === groupId ? { ...g, completed: !g.completed } : g)
+                }));
+            };
+
+            // --- LÓGICA DRAG & DROP ---
+            const handleDragStart = (e, charId) => e.dataTransfer.setData('charId', charId);
+            const handleDragOver = (e) => e.preventDefault();
+
+            const handleDrop = (e, newLocation, targetCharId = null) => {
+                e.preventDefault(); e.stopPropagation(); setDragOverCharId(null);
+                
+                const charId = e.dataTransfer.getData('charId');
+                if (!charId || charId === targetCharId) return;
+
+                let capacityFull = false;
+
+                updateActiveRaid(raid => {
+                    // Bloquear drop se o grupo estiver concluído
+                    const targetGroup = raid.groups.find(g => g.id === newLocation);
+                    if (targetGroup && targetGroup.completed) {
+                        showAlert('Este grupo já está marcado como concluído! Desmarque-o antes de alterar os membros.');
+                        capacityFull = true;
+                        return raid;
+                    }
+
+                    const currentLoc = raid.assignments[charId] || 'garage';
+                    const partyCount = Object.keys(raid.assignments).filter(k => raid.assignments[k] === newLocation).length;
+                    
+                    if (currentLoc !== newLocation && newLocation !== 'garage' && partyCount >= 4) {
+                        showAlert('Este grupo já está cheio (Máx 4 jogadores)!');
+                        capacityFull = true;
+                        return raid;
+                    }
+                    
+                    const newAssignments = { ...raid.assignments };
+                    if (newLocation === 'garage') delete newAssignments[charId];
+                    else newAssignments[charId] = newLocation;
+                    
+                    return { ...raid, assignments: newAssignments };
+                });
+
+                if (capacityFull) return;
+
+                setCharacters(prev => {
+                    const draggedIndex = prev.findIndex(c => c.id === charId);
+                    if (draggedIndex === -1) return prev;
+                    
+                    const newArray = [...prev];
+                    const [draggedChar] = newArray.splice(draggedIndex, 1);
+                    
+                    if (targetCharId) {
+                        const targetIndex = newArray.findIndex(c => c.id === targetCharId);
+                        newArray.splice(targetIndex, 0, draggedChar);
+                    } else {
+                        newArray.push(draggedChar);
+                    }
+                    return newArray;
+                });
+            };
+
+            // --- LÓGICA GRUPOS DA RAID ATUAL ---
+            const addGroup = () => {
+                updateActiveRaid(raid => ({
+                    ...raid,
+                    groups: [...raid.groups, { id: `party${Date.now()}`, title: `Grupo ${raid.groups.length + 1}`, completed: false }]
+                }));
+            };
+
+            const removeGroup = (groupId) => {
+                updateActiveRaid(raid => {
+                    const newAssignments = { ...raid.assignments };
+                    Object.keys(newAssignments).forEach(charId => {
+                        if (newAssignments[charId] === groupId) delete newAssignments[charId];
+                    });
+                    return { ...raid, groups: raid.groups.filter(g => g.id !== groupId), assignments: newAssignments };
+                });
+            };
+
+            const setRaidLayout = (size) => {
+                updateActiveRaid(raid => {
+                    const newAssignments = { ...raid.assignments };
+                    const allowedGroups = size === 4 ? ['party1'] : ['party1', 'party2'];
+                    
+                    Object.keys(newAssignments).forEach(charId => {
+                        if (newAssignments[charId].startsWith('party') && !allowedGroups.includes(newAssignments[charId])) {
+                            delete newAssignments[charId];
+                        }
+                    });
+
+                    return {
+                        ...raid,
+                        groups: size === 4 ? [{ id: 'party1', title: 'Grupo 1', completed: false }] : [{ id: 'party1', title: 'Grupo 1', completed: false }, { id: 'party2', title: 'Grupo 2', completed: false }],
+                        assignments: newAssignments
+                    };
+                });
+            };
+
+            // --- LÓGICA MODAL (GLOBAL) ---
+            const openEditModal = (char = null) => {
+                if (char) {
+                    setEditingChar({ ...char, tempColor: rosterColors[char.roster] || '#333333' });
+                } else {
+                    setEditingChar({ 
+                        id: Date.now().toString(), roster: '', charClass: LA_CLASSES[0], 
+                        ilvl: '1600', primaryRole: 'DPS', secondaryRole: 'Nenhuma', tempColor: '#4F46E5' 
+                    });
+                }
+                setIsModalOpen(true);
+            };
+
+            const saveCharacter = () => {
+                if (!editingChar.roster.trim()) return showAlert("O Roster é obrigatório!");
+                setRosterColors(prev => ({ ...prev, [editingChar.roster]: editingChar.tempColor }));
+                const { tempColor, ...charDataToSave } = editingChar;
+
+                setCharacters(prev => {
+                    const exists = prev.find(c => c.id === charDataToSave.id);
+                    return exists ? prev.map(c => c.id === charDataToSave.id ? charDataToSave : c) : [...prev, charDataToSave];
+                });
+                setIsModalOpen(false);
+            };
+
+            const deleteCharacter = (id) => {
+                showConfirm("Remover personagem? Ele será excluído de TODAS as raides salvas.", () => {
+                    setCharacters(prev => prev.filter(c => c.id !== id));
+                    setRaids(prev => prev.map(r => {
+                        const newAssignments = { ...r.assignments };
+                        delete newAssignments[id];
+                        return { ...r, assignments: newAssignments };
+                    }));
+                    setIsModalOpen(false);
+                });
+            };
+
+            // --- RENDERIZADORES VISUAIS ---
+            const renderRoleIcon = (role, key) => {
+                if (!role || role === 'Nenhuma') return null;
+                switch (role) {
+                    case 'DPS': return <Icons.Sword key={key} className="text-gray-200" title="DPS" />;
+                    case 'Suporte': return <Icons.Plus key={key} className="text-green-400" title="Suporte" />;
+                    case 'Crítico': return <Icons.Zap key={key} className="text-yellow-400" title="Crítico" />;
+                    case 'Dano Crítico': return <Icons.Flame key={key} className="text-red-500" title="Dano Crítico" />;
+                    case 'Armadura': return <Icons.ShieldAlert key={key} className="text-orange-400" title="Armadura" />;
+                    case 'Posicional': return <Icons.Crosshair key={key} className="text-purple-400" title="Posicional" />;
+                    case 'Dano': return <Icons.Sword key={key} className="text-red-400" title="Dano" />;
+                    case 'Defesa': return <Icons.Shield key={key} className="text-blue-400" title="Defesa" />;
+                    default: return null;
+                }
+            };
+
+            // Card Adaptável (Suporta Modo Card Original e Novo Modo Compacto de Barra)
+            const CharacterCard = ({ char, isDisabled, compact = false }) => {
+                const bgColor = rosterColors[char.roster] || '#333333';
+                const isDragOver = dragOverCharId === char.id;
+                const currentLocation = getCharLocation(char.id);
+                
+                // Modo Barra Compacto - Estilo MMO Party Frames (Ideal para lobbies de 8)
+                if (compact) {
+                    return (
+                        <div draggable={!isDisabled} onDragStart={(e) => !isDisabled && handleDragStart(e, char.id)}
+                             onDragOver={(e) => { if(!isDisabled) { e.preventDefault(); e.stopPropagation(); setDragOverCharId(char.id); } }}
+                             onDragLeave={(e) => { e.preventDefault(); if (dragOverCharId === char.id) setDragOverCharId(null); }}
+                             onDrop={(e) => !isDisabled && handleDrop(e, currentLocation, char.id)}
+                             className={`group relative flex items-center justify-between p-2 rounded-lg border shadow-sm transition-all text-xs h-12
+                             ${isDisabled ? 'cursor-not-allowed opacity-70' : 'cursor-grab active:cursor-grabbing hover:brightness-115'} 
+                             ${isDragOver && !isDisabled ? 'border-indigo-400 ring-2 ring-indigo-400/50 transform scale-[1.01]' : 'border-slate-700/40'}`}
+                             style={{ 
+                                 backgroundColor: bgColor,
+                                 backgroundImage: 'linear-gradient(to right, rgba(0,0,0,0.15), rgba(0,0,0,0.45))'
+                             }}>
+                            
+                            {!isDisabled && (
+                                <button onClick={() => openEditModal(char)} className="absolute inset-0 bg-slate-900/90 rounded-lg opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 transition-opacity z-10 text-white font-extrabold border border-slate-650" title="Editar Personagem">
+                                    <Icons.Edit2 size={14} /> <span className="text-[10px] tracking-wide uppercase">Editar</span>
+                                </button>
+                            )}
+
+                            {/* Informações da Esquerda: Classe e Nick/Roster */}
+                            <div className="flex items-center gap-2 min-w-0 flex-1 z-0">
+                                <span className="text-lg flex-shrink-0" title={char.charClass}>{CLASS_ICONS[char.charClass] || '❓'}</span>
+                                <div className="flex flex-col min-w-0">
+                                    <span className="font-extrabold text-white text-[11px] leading-tight truncate [text-shadow:_0_1px_2px_black]">{char.charClass}</span>
+                                    <span className="text-[8px] font-bold text-amber-300 truncate tracking-wider bg-slate-950/85 px-1 py-0.5 rounded border border-slate-800/40 uppercase w-max [text-shadow:_0_1px_1px_black] leading-none mt-0.5" title="Dono do Roster">{char.roster}</span>
+                                </div>
+                            </div>
+
+                            {/* Item Level centralizado */}
+                            <div className="mx-2 flex-shrink-0 z-0">
+                                <span className="text-[10px] font-extrabold text-white bg-black/45 px-1.5 py-0.5 rounded border border-black/20 shadow-sm [text-shadow:_0_1px_1px_black]">
+                                    {char.ilvl}
+                                </span>
+                            </div>
+
+                            {/* Ícones de Sinergia à Direita */}
+                            <div className="flex gap-1 bg-black/35 p-1 rounded-md border border-black/20 flex-shrink-0 items-center z-0">
+                                {renderRoleIcon(char.primaryRole, 'p')}
+                                {char.secondaryRole !== 'Nenhuma' && renderRoleIcon(char.secondaryRole, 's')}
+                            </div>
+
+                            {!isDisabled && (
+                                <div className="absolute left-0.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-20 pointer-events-none transition-opacity">
+                                    <Icons.GripHorizontal size={14} />
+                                </div>
+                            )}
+                        </div>
+                    );
+                }
+
+                // Modo Card Clássico (Usado na Garagem / Disponíveis)
+                return (
+                    <div draggable={!isDisabled} onDragStart={(e) => !isDisabled && handleDragStart(e, char.id)}
+                         onDragOver={(e) => { if(!isDisabled) { e.preventDefault(); e.stopPropagation(); setDragOverCharId(char.id); } }}
+                         onDragLeave={(e) => { e.preventDefault(); if (dragOverCharId === char.id) setDragOverCharId(null); }}
+                         onDrop={(e) => !isDisabled && handleDrop(e, currentLocation, char.id)}
+                         className={`group relative flex flex-col p-3 rounded-xl shadow-md transition-all border min-h-[96px] 
+                         ${isDisabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing hover:brightness-110'} 
+                         ${isDragOver && !isDisabled ? 'border-indigo-400 ring-2 ring-indigo-400 transform scale-[1.02]' : 'border-slate-700/50'}`}
+                         style={{ backgroundColor: bgColor }}>
+                        
+                        <div className="absolute top-2 right-2 flex gap-1.5 bg-black/40 px-2 py-1.5 rounded-lg items-center z-0 shadow-sm border border-black/20">
+                            {renderRoleIcon(char.primaryRole, 'p')}
+                            {char.secondaryRole !== 'Nenhuma' && renderRoleIcon(char.secondaryRole, 's')}
+                        </div>
+
+                        {!isDisabled && (
+                            <button onClick={() => openEditModal(char)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1.5 bg-slate-900 rounded-lg hover:bg-black transition-opacity z-10 text-white shadow-lg border border-slate-600 flex items-center justify-center" title="Editar Personagem">
+                                <Icons.Edit2 size={16} />
+                            </button>
+                        )}
+
+                        <div className="mb-2 w-max">
+                            <span className="text-[11px] font-extrabold px-2 py-1 bg-slate-950/70 text-amber-200 border-slate-800 rounded uppercase tracking-wider text-white shadow-sm border border-black/20 [text-shadow:_0_1px_2px_black]">{char.roster}</span>
+                        </div>
+
+                        <div className="flex justify-between items-end mt-auto pt-2 gap-2">
+                            <span className="font-extrabold text-white text-[15px] truncate [text-shadow:_0_1px_3px_black] drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+                                {CLASS_ICONS[char.charClass]} {char.charClass}
+                            </span>
+                            <span className="text-xs font-bold text-white bg-black/40 px-2 py-1 rounded-md flex-shrink-0 border border-black/20 shadow-sm [text-shadow:_0_1px_2px_black]">ilvl {char.ilvl}</span>
+                        </div>
+
+                        {!isDisabled && (
+                            <div className="absolute top-1/2 -left-2 transform -translate-y-1/2 opacity-0 group-hover:opacity-30 transition-opacity">
+                                <Icons.GripHorizontal size={24} />
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
+            // Zona de Soltar Adaptável (Suporta Layout Normal e Layout Horizontal do Topo)
+            const DropZone = ({ locationId, title, isParty, compact = false, onAddClick = null }) => {
+                let charsInZone = characters.filter(c => getCharLocation(c.id) === locationId);
+                const groupObj = isParty ? activeRaid.groups.find(g => g.id === locationId) : null;
+                const isCompleted = groupObj?.completed;
+                
+                // Aplica o filtro de iLvl apenas na Garagem
+                if (!isParty) {
+                    if (activeRaid.minIlevel) {
+                        charsInZone = charsInZone.filter(c => Number(c.ilvl || 0) >= Number(activeRaid.minIlevel));
+                    }
+                    if (activeRaid.maxIlevel) {
+                        charsInZone = charsInZone.filter(c => Number(c.ilvl || 0) <= Number(activeRaid.maxIlevel));
+                    }
+                }
+
+                const supports = charsInZone.filter(c => c.primaryRole === 'Suporte').length;
+                const dps = charsInZone.filter(c => c.primaryRole === 'DPS').length;
+                const isMeta = supports === 1 && dps === 3;
+
+                // Checa classes duplicadas na mesma PT
+                const duplicateMap = {};
+                charsInZone.forEach(c => { duplicateMap[c.charClass] = (duplicateMap[c.charClass] || 0) + 1; });
+                const hasDuplicates = Object.values(duplicateMap).some(count => count > 1);
+
+                return (
+                    <div className={`relative flex flex-col bg-slate-800 rounded-xl border-2 p-4 flex-shrink-0 transition-all duration-300
+                         ${isParty 
+                            ? (compact ? 'min-h-[290px] w-full border-slate-700/30 bg-slate-900/30' : 'min-h-[400px] w-80 border-slate-700/50') 
+                            : 'w-full min-h-[160px] border-slate-700/50 shadow-2xl bg-slate-800/40'
+                         }
+                         ${isCompleted ? 'opacity-50 grayscale-[0.5] border-green-950 bg-slate-850/50' : ''}`}
+                         onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, locationId)}>
+                        
+                        <div className={`flex justify-between items-start mb-4 border-b pb-2 ${isCompleted ? 'border-green-900/40' : 'border-slate-700/60'}`}>
+                            <div className="flex flex-col">
+                                <h2 className={`text-sm font-extrabold flex items-center gap-2 ${isCompleted ? 'text-slate-400 line-through' : 'text-slate-200'}`}>
+                                    {isParty ? (
+                                        <Icons.Users size={16} className={isCompleted ? "text-slate-500" : "text-indigo-400"}/>
+                                    ) : (
+                                        <Icons.Users size={16} className="text-amber-400"/>
+                                    )} 
+                                    {title}
+                                    {!isParty && (
+                                        <span className="text-[11px] font-bold text-slate-400 bg-slate-900/65 px-2 py-0.5 rounded-full border border-slate-700/65 ml-2 shadow-inner">
+                                            {charsInZone.length} Disponíveis
+                                        </span>
+                                    )}
+                                </h2>
+                                {isParty && charsInZone.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mt-0.5 text-[9px] font-extrabold">
+                                        {isMeta ? (
+                                            <span className="text-green-400 uppercase tracking-wide">✨ PT Meta Perfeita</span>
+                                        ) : (
+                                            <span className="text-slate-400 tracking-wide uppercase">{supports} Sup / {dps} DPS</span>
+                                        )}
+                                        {hasDuplicates && (
+                                            <span className="text-amber-400 uppercase tracking-wide" title="Sinergias de classes iguais não acumulam!">• Sinergia Duplicada</span>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                {isParty ? (
+                                    <>
+                                        <button 
+                                            onClick={() => toggleGroupCompletion(locationId)} 
+                                            className={`p-1 rounded transition-all ${isCompleted ? 'bg-green-900 text-green-300 hover:bg-green-800' : 'bg-slate-700 text-slate-400 hover:text-green-400'}`}
+                                            title={isCompleted ? "Desmarcar conclusão" : "Marcar PT como Concluída"}
+                                        >
+                                            <Icons.CheckCircle size={14} />
+                                        </button>
+                                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${charsInZone.length === 4 ? 'bg-indigo-900/50 text-indigo-300' : 'bg-slate-700 text-slate-300'}`}>{charsInZone.length}/4</span>
+                                        <button onClick={() => removeGroup(locationId)} className="text-slate-500 hover:text-red-400" title="Remover Grupo"><Icons.X size={14} /></button>
+                                    </>
+                                ) : onAddClick ? (
+                                    <button 
+                                        onClick={onAddClick} 
+                                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 hover:border-indigo-400 text-white text-xs font-extrabold rounded-lg transition-all flex items-center gap-1.5 shadow-md border border-indigo-600 active:scale-95" 
+                                        title="Criar Novo Personagem"
+                                    >
+                                        <Icons.Plus size={12} strokeWidth="3" />
+                                        <span>Criar Personagem</span>
+                                    </button>
+                                ) : null}
+                            </div>
+                        </div>
+
+                        {(!isParty && (activeRaid.minIlevel || activeRaid.maxIlevel)) && (
+                            <div className="text-xs text-indigo-300 mb-4 font-bold flex items-center gap-1.5 bg-indigo-900/40 p-2 rounded-lg border border-indigo-500/30 w-max shadow-sm">
+                                <Icons.Filter size={14} /> Filtrando: iLvl {activeRaid.minIlevel || '0'} {activeRaid.maxIlevel ? `até ${activeRaid.maxIlevel}` : '+'}
+                            </div>
+                        )}
+
+                        {/* Layout de Exibição Condicional (Coluna se for Party, Grade Horizontal Ampla se for Garagem) */}
+                        <div className={isParty 
+                            ? "flex-1 flex flex-col gap-2" 
+                            : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin"
+                        }>
+                            {charsInZone.length === 0 ? (
+                                <div className={`flex items-center justify-center text-slate-500 border-2 border-dashed border-slate-700/60 rounded-lg p-6 text-center text-xs ${isParty ? 'flex-1 min-h-[120px]' : 'col-span-full py-12 bg-slate-900/10'}`}>
+                                    {(!isParty && (activeRaid.minIlevel || activeRaid.maxIlevel)) ? "Nenhum personagem correspondente aos filtros" : "Sem personagens na garagem. Clique em 'Criar Personagem' para adicionar."}
+                                </div>
+                            ) : charsInZone.map(char => <CharacterCard key={char.id} char={char} isDisabled={isCompleted} compact={compact} />)}
+                        </div>
+                    </div>
+                );
+            };
+
+            // Nova função de renderização inteligente de Grupos (Envelopamento para Lobbies de 8 Players)
+            const renderRaidLayout = () => {
+                const pairedLayouts = [];
+                const groups = activeRaid.groups;
+                
+                // Agrupa as PTs de duas em duas
+                for (let i = 0; i < groups.length; i += 2) {
+                    if (i + 1 < groups.length) {
+                        pairedLayouts.push({
+                            type: 'raid8',
+                            g1: groups[i],
+                            g2: groups[i+1]
+                        });
+                    } else {
+                        pairedLayouts.push({
+                            type: 'party4',
+                            g1: groups[i]
+                        });
+                    }
+                }
+
+                return pairedLayouts.map((pair, index) => {
+                    if (pair.type === 'raid8') {
+                        const g1 = pair.g1;
+                        const g2 = pair.g2;
+                        
+                        const charsG1 = characters.filter(c => getCharLocation(c.id) === g1.id);
+                        const charsG2 = characters.filter(c => getCharLocation(c.id) === g2.id);
+                        
+                        const g1Sups = charsG1.filter(c => c.primaryRole === 'Suporte').length;
+                        const g1Dps = charsG1.filter(c => c.primaryRole === 'DPS').length;
+                        const g2Sups = charsG2.filter(c => c.primaryRole === 'Suporte').length;
+                        const g2Dps = charsG2.filter(c => c.primaryRole === 'DPS').length;
+                        
+                        const totalSups = g1Sups + g2Sups;
+                        const totalDps = g1Dps + g2Dps;
+                        
+                        // Coleta sinergias únicas combinadas
+                        const synergiesSet = new Set();
+                        [...charsG1, ...charsG2].forEach(c => {
+                            if (c.secondaryRole && c.secondaryRole !== 'Nenhuma') {
+                                synergiesSet.add(c.secondaryRole);
+                            }
+                        });
+                        const uniqueSynergies = Array.from(synergiesSet);
+
+                        // Calcula média de iLvl combinada
+                        const allLobbyChars = [...charsG1, ...charsG2];
+                        const avgIlvl = allLobbyChars.length > 0
+                            ? (allLobbyChars.reduce((sum, c) => sum + Number(c.ilvl || 0), 0) / allLobbyChars.length).toFixed(1)
+                            : null;
+
+                        // Verifica classes duplicadas em uma mesma PT
+                        const checkDuplicatesInParty = (charsList) => {
+                            const map = {};
+                            charsList.forEach(c => { map[c.charClass] = (map[c.charClass] || 0) + 1; });
+                            return Object.values(map).some(count => count > 1);
+                        };
+                        const hasLobbyDuplicates = checkDuplicatesInParty(charsG1) || checkDuplicatesInParty(charsG2);
+
+                        return (
+                            <div key={`lobby-8-${index}`} className="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-5 shadow-2xl flex flex-col gap-4 w-full max-w-[680px] hover:border-indigo-500/35 transition-all duration-300">
+                                
+                                {/* Header do Lobby de Raid de 8 Players */}
+                                <div className="flex flex-wrap justify-between items-center border-b border-slate-700/80 pb-3 gap-2">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+                                            <Icons.Users size={22} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-black text-white tracking-wide">Lobby de Raid (8 Players)</h3>
+                                            <p className="text-[10px] text-indigo-300 font-extrabold tracking-wider uppercase">{g1.title} + {g2.title}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        {avgIlvl && (
+                                            <span className="bg-slate-900/60 text-indigo-200 text-xs font-bold px-2 py-0.5 rounded border border-slate-700">
+                                                iLvl Médio: {avgIlvl}
+                                            </span>
+                                        )}
+                                        <div className="flex gap-1 text-[10px]">
+                                            <span className={`px-2 py-0.5 rounded font-extrabold border ${totalSups === 2 ? 'bg-green-950/40 text-green-400 border-green-800/30' : 'bg-slate-900/60 text-slate-400 border-slate-700'}`}>
+                                                Sups: {totalSups}/2
+                                            </span>
+                                            <span className={`px-2 py-0.5 rounded font-extrabold border ${totalDps === 6 ? 'bg-indigo-950/40 text-indigo-300 border-indigo-800/30' : 'bg-slate-900/60 text-slate-400 border-slate-700'}`}>
+                                                DPS: {totalDps}/6
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {/* Sub-PTs em Duas Colunas Compactas */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <DropZone locationId={g1.id} title={g1.title} isParty={true} compact={true} />
+                                    <DropZone locationId={g2.id} title={g2.title} isParty={true} compact={true} />
+                                </div>
+
+                                {/* Painel de Sinergias Combinadas */}
+                                <div className="bg-slate-900/45 p-3 rounded-xl border border-slate-700/50 text-xs text-slate-400 flex flex-col gap-1.5">
+                                    <div className="flex justify-between items-center flex-wrap gap-1">
+                                        <span className="font-extrabold text-indigo-400 uppercase tracking-wider text-[10px]">Sinergias Ativas no Lobby</span>
+                                        {hasLobbyDuplicates && (
+                                            <span className="text-[10px] text-amber-400 font-bold flex items-center gap-1">
+                                                ⚠️ Classe duplicada na mesma PT!
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-wrap gap-1.5 mt-0.5">
+                                        {uniqueSynergies.map(syn => (
+                                            <span key={syn} className="bg-slate-850 text-indigo-200 px-2 py-1 rounded-lg border border-slate-700/50 flex items-center gap-1.5 font-semibold shadow-sm">
+                                                {renderRoleIcon(syn, syn)} {syn}
+                                            </span>
+                                        ))}
+                                        {uniqueSynergies.length === 0 && (
+                                            <span className="text-slate-500 italic">Nenhuma sinergia ativa</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    } else {
+                        // Grupo Isolado (PT Solta de 4 Players)
+                        const g1 = pair.g1;
+                        return (
+                            <div key={`single-${g1.id}`} className="flex-shrink-0">
+                                <DropZone locationId={g1.id} title={g1.title} isParty={true} compact={false} />
+                            </div>
+                        );
+                    }
+                });
+            };
+
+            return (
+                <div className="min-h-screen p-6">
+                    
+                    {/* TABS DE RAIDS & RESET SEMANAL */}
+                    <div className="max-w-[1700px] mx-auto mb-0 flex gap-2 overflow-x-auto pt-2 px-4 scrollbar-thin items-end">
+                        {raids.map(raid => (
+                            <button 
+                                key={raid.id}
+                                onClick={() => setActiveRaidId(raid.id)}
+                                className={`px-5 py-3 rounded-t-xl font-bold flex items-center gap-2 whitespace-nowrap transition-all border-t-2 border-x-2 ${activeRaidId === raid.id ? 'bg-slate-800 text-white border-slate-700/50 shadow-md' : 'bg-slate-900 text-slate-400 border-transparent hover:bg-slate-800'}`}
+                            >
+                                <span>{raid.emoji}</span> {raid.title}
+                            </button>
+                        ))}
+                        <button 
+                            onClick={createNewRaid}
+                            className="px-4 py-3 rounded-t-xl font-bold bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white flex items-center gap-1 transition-all"
+                        >
+                            <Icons.Plus size={16} /> Nova Raid
+                        </button>
+                        
+                        {/* Botão de Reset Semanal */}
+                        <div className="ml-auto pb-1 flex gap-2 flex-shrink-0">
+                            <button onClick={exportData} className="px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all whitespace-nowrap" title="Baixa um arquivo de backup com seus personagens e raids">💾 Exportar</button>
+                            <label className="px-4 py-2 rounded-lg font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 transition-all cursor-pointer whitespace-nowrap" title="Restaura um backup exportado anteriormente">
+                                📂 Importar
+                                <input type="file" accept=".json,application/json" onChange={importData} className="hidden" />
+                            </label>
+                            <button 
+                                onClick={resetAllWeekly}
+                                className="px-4 py-2 rounded-lg font-bold bg-green-900/30 text-green-400 hover:bg-green-900/60 hover:text-green-300 flex items-center gap-2 border border-green-800/40 transition-all shadow-lg"
+                                title="Desmarca as PTs concluídas de TODAS as raides salvas"
+                            >
+                                <Icons.RefreshCw size={16} /> Reset Semanal
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Header Principal da Raid Ativa */}
+                    <div className="max-w-[1700px] mx-auto mb-8 bg-slate-800 p-6 rounded-b-2xl rounded-tr-2xl shadow-lg border border-slate-700 flex flex-col md:flex-row items-end gap-4 relative">
+                        <div className="flex flex-1 gap-3 w-full flex-col sm:flex-row">
+                            <div className="w-full sm:w-16">
+                                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1 tracking-wider text-center">Ícone</label>
+                                <input type="text" value={activeRaid.emoji} onChange={(e) => updateActiveRaid(r => ({ ...r, emoji: e.target.value }))} className="w-full bg-slate-900 text-2xl text-center p-2 rounded-lg border border-transparent hover:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" title="Cole um Emoji aqui" />
+                            </div>
+                            <div className="flex-1">
+                                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1 tracking-wider">Título da Raid</label>
+                                <input type="text" value={activeRaid.title} onChange={(e) => updateActiveRaid(r => ({ ...r, title: e.target.value }))} className="w-full bg-slate-900 text-2xl font-black text-white p-2 rounded-lg border border-transparent hover:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors" />
+                            </div>
+                            <div className="flex gap-2 justify-between">
+                                <div className="w-24">
+                                    <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1 tracking-wider text-center text-ellipsis overflow-hidden whitespace-nowrap" title="Personagens abaixo desse iLvl não aparecerão na garagem">iLvl Mín</label>
+                                    <input type="number" value={activeRaid.minIlevel} onChange={(e) => updateActiveRaid(r => ({ ...r, minIlevel: e.target.value }))} placeholder="1620" className="w-full bg-slate-900 text-lg font-bold text-white text-center p-2 rounded-lg border border-transparent hover:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors placeholder:text-slate-600" />
+                                </div>
+                                <div className="w-24">
+                                    <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1 tracking-wider text-center text-ellipsis overflow-hidden whitespace-nowrap" title="Personagens acima desse iLvl não aparecerão na garagem">iLvl Máx</label>
+                                    <input type="number" value={activeRaid.maxIlevel} onChange={(e) => updateActiveRaid(r => ({ ...r, maxIlevel: e.target.value }))} placeholder="1639" className="w-full bg-slate-900 text-lg font-bold text-white text-center p-2 rounded-lg border border-transparent hover:border-slate-600 focus:border-indigo-500 focus:outline-none transition-colors placeholder:text-slate-600" />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 w-full md:w-auto flex-wrap sm:flex-nowrap">
+                            <button onClick={() => setRaidLayout(4)} className="flex-1 sm:flex-initial px-5 py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2" title="Abyssal (4 pessoas)"><span className="text-xl leading-none">4</span> <Icons.Users size={18} /></button>
+                            <button onClick={() => setRaidLayout(8)} className="flex-1 sm:flex-initial px-5 py-3 bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 font-bold rounded-lg transition-all flex items-center justify-center gap-2 border border-indigo-700/50" title="Legion / 8 Players (Grupo Duplo Compacto)"><span className="text-xl leading-none">8</span> <Icons.Users size={18} /></button>
+                            <button onClick={addGroup} className="flex-1 sm:flex-initial px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg flex items-center justify-center gap-2 shadow-lg transition-all"><Icons.Plus size={20} /> Grupo Extra</button>
+                            <button onClick={deleteCurrentRaid} className="px-4 py-3 bg-red-900/40 text-red-400 hover:bg-red-900/60 hover:text-red-300 font-bold rounded-lg transition-all flex items-center justify-center gap-2 border border-red-800/50" title="Excluir Aba de Raid Atual"><Icons.Trash2 size={18} /></button>
+                        </div>
+                    </div>
+
+                    {/* Main Board */}
+                    <div className="max-w-[1700px] mx-auto pb-12 flex flex-col gap-6">
+                        
+                        {/* Garagem de Personagens no TOPO da tela com largura total */}
+                        <div className="w-full z-10">
+                            <DropZone locationId="garage" title="Personagens Disponíveis (Garagem)" isParty={false} onAddClick={() => openEditModal()} />
+                        </div>
+                        
+                        {/* Divisor Visual de Alta Definição */}
+                        <div className="relative my-6">
+                            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                                <div className="w-full border-t-2 border-slate-800/80"></div>
+                            </div>
+                            <div className="relative flex justify-center">
+                                <span className="bg-slate-900 px-6 py-2 text-xs font-black tracking-widest text-indigo-400 uppercase flex items-center gap-2.5 border border-slate-700/60 rounded-full shadow-lg backdrop-blur-sm">
+                                    <Icons.Sword size={13} strokeWidth="2.5" className="text-indigo-400 animate-pulse" /> 
+                                    MONTAGEM DOS GRUPOS DA RAID 
+                                    <Icons.Sword size={13} strokeWidth="2.5" className="text-indigo-400 animate-pulse" />
+                                </span>
+                            </div>
+                        </div>
+                        
+                        {/* Tabuleiro Principal de Raids (Grid Flexível para as PTs e Lobbies de 8) */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-8 justify-items-center xl:justify-items-start w-full">
+                            {renderRaidLayout()}
+                        </div>
+                    </div>
+
+                    <footer className="max-w-[1700px] mx-auto text-center text-[11px] text-slate-500 pb-6 px-4">
+                        Seus dados ficam salvos apenas neste navegador — use Exportar para fazer backup ou levar para outro dispositivo.
+                        <br />Projeto de fã, sem afiliação com Smilegate RPG ou Amazon Games. Lost Ark é marca de seus respectivos donos.
+                    </footer>
+
+                    {/* Modal */}
+                    {isModalOpen && (
+                        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                            <div className="bg-slate-800 p-6 rounded-2xl border border-slate-600 shadow-2xl w-full max-w-lg">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-xl font-bold text-white">{characters.find(c => c.id === editingChar.id) ? 'Editar Personagem' : 'Novo Personagem'}</h3>
+                                    <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white"><Icons.X size={24} /></button>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="flex gap-4">
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-bold text-slate-400 mb-1">Roster</label>
+                                            <input type="text" value={editingChar.roster} onChange={e => { const r = e.target.value; setEditingChar({ ...editingChar, roster: r, tempColor: rosterColors[r] || editingChar.tempColor }); }} placeholder="Ex: Koij" className="w-full bg-slate-900 p-3 rounded-lg border border-slate-600 text-white focus:border-indigo-500 outline-none" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-400 mb-1">Cor</label>
+                                            <div className="w-12 h-12 rounded-lg overflow-hidden border-2 border-slate-600 cursor-pointer">
+                                                <input type="color" value={editingChar.tempColor} onChange={e => setEditingChar({ ...editingChar, tempColor: e.target.value })} className="w-16 h-16 -mt-2 -ml-2 cursor-pointer" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-400 mb-1">Classe</label>
+                                        <select value={editingChar.charClass} onChange={e => setEditingChar({ ...editingChar, charClass: e.target.value })} className="w-full bg-slate-900 p-3 rounded-lg border border-slate-600 text-white focus:border-indigo-500 outline-none">
+                                            {LA_CLASSES.map(cls => <option key={cls} value={cls}>{CLASS_ICONS[cls]} {cls}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="flex gap-4">
+                                        <div className="w-1/4">
+                                            <label className="block text-sm font-bold text-slate-400 mb-1">Item Level</label>
+                                            <input type="number" value={editingChar.ilvl} onChange={e => setEditingChar({ ...editingChar, ilvl: e.target.value })} className="w-full bg-slate-900 p-3 rounded-lg border border-slate-600 text-white focus:border-indigo-500 outline-none" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-bold text-slate-400 mb-1">Função Principal</label>
+                                            <select value={editingChar.primaryRole} onChange={e => setEditingChar({ ...editingChar, primaryRole: e.target.value })} className="w-full bg-slate-900 p-3 rounded-lg border border-slate-600 text-white focus:border-indigo-500 outline-none">
+                                                {PRIMARY_ROLES.map(role => <option key={role} value={role}>{role}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-bold text-slate-400 mb-1">Sinergia</label>
+                                            <select value={editingChar.secondaryRole} onChange={e => setEditingChar({ ...editingChar, secondaryRole: e.target.value })} className="w-full bg-slate-900 p-3 rounded-lg border border-slate-600 text-white focus:border-indigo-500 outline-none">
+                                                {SYNERGIES.map(role => <option key={role} value={role}>{role}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between items-center mt-8 pt-4 border-t border-slate-700">
+                                    <button onClick={() => deleteCharacter(editingChar.id)} className="text-red-400 hover:text-red-300 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-red-400/10 transition-colors" title="Excluir personagem de TODAS as raides"><Icons.Trash2 size={18} /> Excluir do Roster</button>
+                                    <div className="flex gap-3">
+                                        <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-300 hover:text-white transition-colors">Cancelar</button>
+                                        <button onClick={saveCharacter} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow-lg transition-colors">Salvar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Alert Modal Customizado */}
+                    {alertDialog.isOpen && (
+                        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
+                            <div className="bg-slate-800 p-6 rounded-2xl border border-slate-600 shadow-2xl w-full max-w-sm text-center">
+                                <div className="text-yellow-400 mb-4 flex justify-center">
+                                    <Icons.ShieldAlert size={48} />
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-4">{alertDialog.message}</h3>
+                                <button onClick={() => setAlertDialog({ isOpen: false, message: '' })} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg transition-colors w-full">Entendido</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Confirm Modal Customizado */}
+                    {confirmDialog.isOpen && (
+                        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
+                            <div className="bg-slate-800 p-6 rounded-2xl border border-slate-600 shadow-2xl w-full max-w-md text-center">
+                                <h3 className="text-xl font-bold text-white mb-6">{confirmDialog.message}</h3>
+                                <div className="flex gap-4 justify-center">
+                                    <button onClick={() => setConfirmDialog({ isOpen: false, message: '', onConfirm: null })} className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg transition-colors flex-1">Cancelar</button>
+                                    <button onClick={() => { confirmDialog.onConfirm(); setConfirmDialog({ isOpen: false, message: '', onConfirm: null }); }} className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-colors flex-1">Confirmar</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
