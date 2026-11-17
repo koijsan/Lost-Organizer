@@ -90,6 +90,10 @@
 
         const PRIMARY_ROLES = ['DPS', 'Suporte'];
 
+        // Versão exibida ao lado do título. Atualize estas duas linhas a cada publicação.
+        const APP_VERSION = 'v0.5';
+        const APP_UPDATED = '2026-11-16';
+
         // --- SINERGIAS AUTOMÁTICAS (definidas pela classe) ---
         // Porcentagem de cada sinergia de DPS. Sinergias do mesmo tipo não acumulam entre si.
         const SYNERGY_PCT = { 'Armadura': 12, 'Crítico': 10, 'Dano Crítico': 8, 'Dano': 6, 'Poder de Ataque': 6, 'Posicional': 4 };
@@ -259,7 +263,7 @@
                 mode4Tip: `Modo 4 jogadores (Abyssal): cada grupo é uma PT independente`, mode8Tip: `Modo 8 jogadores (Legion): os grupos formam lobbies de 8`,
                 addGroup: `Grupo Extra`, addGroupTip: `Adicionar um grupo extra`, deleteRaidTip: `Excluir esta aba de raid`, deleteRaidAria: `Excluir raid`,
                 panelToggle: `👥 Personagens disponíveis`, searchPh: `🔍 Buscar roster ou classe...`,
-                roleAll: `Todas as funções`, roleFilterTip: `Filtrar por função`, classAll: `Todas as classes`, classFilterTip: `Filtrar por classe`, clearFilters: `✕ Limpar filtros`,
+                roleAll: `Função`, roleFilterTip: `Filtrar por função`, classAll: `Classe`, classFilterTip: `Filtrar por classe`, updatedOn: `Atualizado em`, clearFilters: `✕ Limpar filtros`,
                 availableTitle: `Personagens Disponíveis`, availableCount: `{n} Disponíveis`,
                 createChar: `Criar Personagem`, createCharTip: `Criar Novo Personagem`,
                 filtering: `Filtrando: iLvl`, upTo: `até {n}`,
@@ -313,7 +317,7 @@
                 mode4Tip: `4-player mode (Abyssal): each group is an independent party`, mode8Tip: `8-player mode (Legion): groups are paired into 8-player lobbies`,
                 addGroup: `Extra Group`, addGroupTip: `Add an extra group`, deleteRaidTip: `Delete this raid tab`, deleteRaidAria: `Delete raid`,
                 panelToggle: `👥 Available characters`, searchPh: `🔍 Search roster or class...`,
-                roleAll: `All roles`, roleFilterTip: `Filter by role`, classAll: `All classes`, classFilterTip: `Filter by class`, clearFilters: `✕ Clear filters`,
+                roleAll: `Role`, roleFilterTip: `Filter by role`, classAll: `Class`, classFilterTip: `Filter by class`, updatedOn: `Updated`, clearFilters: `✕ Clear filters`,
                 availableTitle: `Available Characters`, availableCount: `{n} Available`,
                 createChar: `Create Character`, createCharTip: `Create New Character`,
                 filtering: `Filtering: iLvl`, upTo: `up to {n}`,
@@ -367,7 +371,7 @@
                 mode4Tip: `Modo de 4 jugadores (Abisal): cada grupo es independiente`, mode8Tip: `Modo de 8 jugadores (Legión): los grupos forman lobbies de 8`,
                 addGroup: `Grupo extra`, addGroupTip: `Añadir un grupo extra`, deleteRaidTip: `Eliminar esta pestaña de raid`, deleteRaidAria: `Eliminar raid`,
                 panelToggle: `👥 Personajes disponibles`, searchPh: `🔍 Buscar roster o clase...`,
-                roleAll: `Todos los roles`, roleFilterTip: `Filtrar por rol`, classAll: `Todas las clases`, classFilterTip: `Filtrar por clase`, clearFilters: `✕ Quitar filtros`,
+                roleAll: `Rol`, roleFilterTip: `Filtrar por rol`, classAll: `Clase`, classFilterTip: `Filtrar por clase`, updatedOn: `Actualizado`, clearFilters: `✕ Quitar filtros`,
                 availableTitle: `Personajes Disponibles`, availableCount: `{n} Disponibles`,
                 createChar: `Crear Personaje`, createCharTip: `Crear Nuevo Personaje`,
                 filtering: `Filtrando: iLvl`, upTo: `hasta {n}`,
@@ -1323,6 +1327,10 @@
                             <h1 className="text-white uppercase text-3xl sm:text-6xl md:text-7xl tracking-[0.15em] sm:tracking-[0.3em] pl-[0.15em] sm:pl-[0.3em]" style={{ fontFamily: "'Montserrat', ui-sans-serif, system-ui, sans-serif", fontWeight: 200 }}>
                                 LOST ORGANIZER
                             </h1>
+                            <div className="flex flex-col items-start self-end pb-1 sm:pb-3 gap-0.5 leading-none">
+                                <span className="text-[10px] sm:text-xs font-bold tracking-wider text-indigo-300 bg-indigo-500/10 border border-indigo-400/30 rounded-full px-2 py-0.5">{APP_VERSION}</span>
+                                <span className="text-[9px] sm:text-[10px] text-slate-500 whitespace-nowrap">{t('updatedOn')} {new Date(APP_UPDATED + 'T12:00:00').toLocaleDateString(lang === 'pt' ? 'pt-BR' : lang === 'es' ? 'es' : 'en-GB')}</span>
+                            </div>
                         </div>
                     </header>
 
