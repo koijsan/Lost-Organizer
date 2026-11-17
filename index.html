@@ -133,21 +133,78 @@
             for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
             return out;
         };
+        const runStream = async (bytes, stream) => new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer());
         const encodeShare = async (obj) => {
             const raw = new TextEncoder().encode(JSON.stringify(obj));
-            if (typeof CompressionStream !== 'undefined') {
-                const stream = new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'));
-                return 'g' + toB64Url(new Uint8Array(await new Response(stream).arrayBuffer()));
+            for (const [prefix, fmt] of [['d', 'deflate-raw'], ['g', 'gzip']]) {
+                try { return prefix + toB64Url(await runStream(raw, new CompressionStream(fmt))); } catch (e) { /* tenta o próximo formato */ }
             }
             return 'r' + toB64Url(raw);
         };
         const decodeShare = async (str) => {
             let bytes = fromB64Url(str.slice(1));
-            if (str[0] === 'g') {
-                const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
-                bytes = new Uint8Array(await new Response(stream).arrayBuffer());
-            }
+            if (str[0] === 'd') bytes = await runStream(bytes, new DecompressionStream('deflate-raw'));
+            else if (str[0] === 'g') bytes = await runStream(bytes, new DecompressionStream('gzip'));
             return JSON.parse(new TextDecoder().decode(bytes));
+        };
+
+        // --- FORMATO COMPACTO DO LINK (v2) ---
+        // Listas só de ACRÉSCIMO: nunca reordenar, senão links já enviados mudariam de significado.
+        const SHARE_CLASSES = ['Aeromancer', 'Arcanist', 'Artillerist', 'Artist', 'Bard', 'Berserker', 'Breaker', 'Deadeye', 'Deathblade', 'Destroyer', 'Glaivier', 'Gunlancer', 'Gunslinger', 'Machinist', 'Paladin', 'Reaper', 'Scrapper', 'Shadowhunter', 'Sharpshooter', 'Slayer', 'Sorceress', 'Souleater', 'Soulfist', 'Striker', 'Summoner', 'Wardancer', 'Wildsoul', 'Valkyrie', 'Guardianknight', 'Dimensionalist'];
+        const SHARE_SYNS = ['Nenhuma', 'Crítico', 'Dano Crítico', 'Armadura', 'Posicional', 'Dano', 'Defesa'];
+        const DEFAULT_GROUP_RE = /^(Grupo|Group) (\d+)$/;
+
+        const packShare = (raid, chars, colors) => {
+            const gIdx = new Map(raid.groups.map((g, i) => [g.id, i]));
+            const used = chars.filter(c => gIdx.has(raid.assignments[c.id]));
+            const rosterIdx = new Map();
+            const rosters = [];
+            used.forEach(c => {
+                if (rosterIdx.has(c.roster)) return;
+                rosterIdx.set(c.roster, rosters.length);
+                const col = String(colors[c.roster] || '').replace('#', '');
+                rosters.push(col ? [c.roster, col] : [c.roster]);
+            });
+            const titles = raid.groups.map((g, i) => {
+                const m = DEFAULT_GROUP_RE.exec(g.title);
+                return (m && Number(m[2]) === i + 1) ? '' : g.title; // nome padrão vira vazio e é recriado no idioma de quem abrir
+            });
+            const rows = used.map(c => {
+                const cls = SHARE_CLASSES.indexOf(c.charClass);
+                const syn = SHARE_SYNS.indexOf(c.secondaryRole);
+                return [
+                    rosterIdx.get(c.roster),
+                    cls >= 0 ? cls : c.charClass,
+                    Number(c.ilvl) || 0,
+                    (syn >= 0 ? syn : 0) * 2 + (c.primaryRole === 'Suporte' ? 1 : 0),
+                    gIdx.get(raid.assignments[c.id])
+                ];
+            });
+            return [2, raid.title, raid.emoji, raid.mode === 4 ? 4 : 8, titles, rosters, rows];
+        };
+
+        const unpackShare = (a) => {
+            if (!Array.isArray(a) || a[0] !== 2 || !Array.isArray(a[4]) || !Array.isArray(a[5]) || !Array.isArray(a[6])) throw new Error('invalid');
+            const [, title, emoji, mode, titles, rosters, rows] = a;
+            const groups = titles.map((tt, i) => ({ id: `g${i}`, title: tt || '' }));
+            const colors = {};
+            rosters.forEach(r => { if (r[1]) colors[String(r[0])] = `#${r[1]}`; });
+            const characters = [], assignments = {};
+            rows.forEach((r, i) => {
+                const rs = Number(r[3]) || 0;
+                const g = groups[r[4]];
+                if (!g || !rosters[r[0]]) return;
+                characters.push({
+                    id: `x${i}`,
+                    roster: rosters[r[0]][0],
+                    charClass: typeof r[1] === 'number' ? SHARE_CLASSES[r[1]] : r[1],
+                    ilvl: String(r[2] || ''),
+                    primaryRole: (rs % 2) ? 'Suporte' : 'DPS',
+                    secondaryRole: SHARE_SYNS[Math.floor(rs / 2)] || 'Nenhuma'
+                });
+                assignments[`x${i}`] = g.id;
+            });
+            return { app: 'lostark-raid-organizer', raid: { title, emoji, mode, groups, assignments }, characters, colors };
         };
         const normText = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
@@ -545,7 +602,7 @@
                 const colors = {};
                 chars.forEach(c => { if (rosterColors[c.roster]) colors[c.roster] = rosterColors[c.roster]; });
                 try {
-                    const code = await encodeShare({ app: 'lostark-raid-organizer', v: 1, raid: activeRaid, characters: chars, colors });
+                    const code = await encodeShare(packShare(activeRaid, chars, colors));
                     const url = `${location.href.split('#')[0]}#s=${code}`;
                     const longWarn = url.length > 1900 ? t('shareLongWarn') : '';
                     try {
@@ -575,7 +632,7 @@
                     };
                 });
                 const r = d.raid;
-                const groups = r.groups.slice(0, 30).map(g => ({ id: String(g.id), title: String(g.title || t('groupWord')).slice(0, 28), completed: false }));
+                const groups = r.groups.slice(0, 30).map(g => ({ id: String(g.id), title: String(g.title || t('groupN', { n: r.groups.indexOf(g) + 1 })).slice(0, 28), completed: false }));
                 const groupIds = new Set(groups.map(g => g.id));
                 const assignments = {};
                 Object.entries(r.assignments || {}).forEach(([cid, loc]) => {
@@ -602,7 +659,8 @@
                 if (!m) return;
                 (async () => {
                     try {
-                        const d = await decodeShare(m[1]);
+                        let d = await decodeShare(m[1]);
+                        if (Array.isArray(d)) d = unpackShare(d);
                         if (!d || d.app !== 'lostark-raid-organizer' || !d.raid || !Array.isArray(d.raid.groups) || !Array.isArray(d.characters)) throw new Error('invalid');
                         history.replaceState(null, '', location.href.split('#')[0]);
                         showConfirm(t('importSharedConfirm', { title: String(d.raid.title || 'Raid').slice(0, 40), n: d.characters.length }), () => importShared(d));
